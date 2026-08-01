@@ -1,0 +1,451 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Brain, Plus, Play, Search, Filter, Trash2, Edit, RotateCw, Check, X, Clock, TrendingUp, Award, BookOpen, Zap } from 'lucide-react';
+import {
+  getAllFlashcards,
+  createFlashcard,
+  deleteFlashcard,
+  getDueFlashcards,
+  reviewFlashcard,
+  getFlashcardStats,
+  getAllDecks,
+  createDeck,
+  getDeckCards,
+  Flashcard,
+  FlashcardDeck,
+} from '@/lib/flashcards';
+
+export default function FlashcardSystem() {
+  const [activeTab, setActiveTab] = useState<'study' | 'create' | 'browse' | 'stats'>('study');
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [dueCards, setDueCards] = useState<Flashcard[]>([]);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [stats, setStats] = useState(getFlashcardStats());
+  const [decks, setDecks] = useState<FlashcardDeck[]>([]);
+  const [showingAnswer, setShowingAnswer] = useState(false);
+  
+  // Create form
+  const [newCard, setNewCard] = useState({ front: '', back: '', difficulty: 'medium' as const });
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = () => {
+    setFlashcards(getAllFlashcards());
+    setDueCards(getDueFlashcards());
+    setStats(getFlashcardStats());
+    setDecks(getAllDecks());
+  };
+
+  const handleCreateCard = () => {
+    if (!newCard.front || !newCard.back) {
+      alert('Please fill in both front and back of the card');
+      return;
+    }
+
+    createFlashcard(newCard.front, newCard.back, newCard.difficulty);
+    setNewCard({ front: '', back: '', difficulty: 'medium' });
+    loadData();
+    alert('Flashcard created!');
+  };
+
+  const handleReview = (quality: number) => {
+    if (dueCards[currentCardIndex]) {
+      reviewFlashcard(dueCards[currentCardIndex].id, quality);
+      
+      // Move to next card
+      if (currentCardIndex < dueCards.length - 1) {
+        setCurrentCardIndex(currentCardIndex + 1);
+        setIsFlipped(false);
+        setShowingAnswer(false);
+      } else {
+        // Session complete
+        alert('Study session complete! 🎉');
+        setCurrentCardIndex(0);
+        setIsFlipped(false);
+        setShowingAnswer(false);
+      }
+      
+      loadData();
+    }
+  };
+
+  const handleFlipCard = () => {
+    setIsFlipped(!isFlipped);
+    if (!showingAnswer) {
+      setShowingAnswer(true);
+    }
+  };
+
+  const handleDeleteCard = (id: string) => {
+    if (confirm('Delete this flashcard?')) {
+      deleteFlashcard(id);
+      loadData();
+    }
+  };
+
+  const filteredCards = searchQuery
+    ? flashcards.filter(c => 
+        c.front.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.back.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : flashcards;
+
+  const currentCard = dueCards[currentCardIndex];
+
+  return (
+    <div className="space-y-6">
+      {/* Header Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Brain className="w-5 h-5" />
+            <span className="text-sm opacity-90">Total Cards</span>
+          </div>
+          <div className="text-3xl font-bold">{stats.totalCards}</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-5 h-5" />
+            <span className="text-sm opacity-90">Due Today</span>
+          </div>
+          <div className="text-3xl font-bold">{stats.cardsDue}</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-5 h-5" />
+            <span className="text-sm opacity-90">Success Rate</span>
+          </div>
+          <div className="text-3xl font-bold">{stats.successRate}%</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Award className="w-5 h-5" />
+            <span className="text-sm opacity-90">Reviewed</span>
+          </div>
+          <div className="text-3xl font-bold">{stats.cardsReviewed}</div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="bg-white rounded-xl shadow-lg">
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('study')}
+            className={`flex-1 py-4 px-6 font-medium transition-colors ${
+              activeTab === 'study'
+                ? 'text-primary-600 border-b-2 border-primary-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <Play className="w-5 h-5 inline mr-2" />
+            Study
+          </button>
+
+          <button
+            onClick={() => setActiveTab('create')}
+            className={`flex-1 py-4 px-6 font-medium transition-colors ${
+              activeTab === 'create'
+                ? 'text-primary-600 border-b-2 border-primary-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <Plus className="w-5 h-5 inline mr-2" />
+            Create
+          </button>
+
+          <button
+            onClick={() => setActiveTab('browse')}
+            className={`flex-1 py-4 px-6 font-medium transition-colors ${
+              activeTab === 'browse'
+                ? 'text-primary-600 border-b-2 border-primary-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <BookOpen className="w-5 h-5 inline mr-2" />
+            Browse
+          </button>
+
+          <button
+            onClick={() => setActiveTab('stats')}
+            className={`flex-1 py-4 px-6 font-medium transition-colors ${
+              activeTab === 'stats'
+                ? 'text-primary-600 border-b-2 border-primary-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <TrendingUp className="w-5 h-5 inline mr-2" />
+            Stats
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          {/* Study Tab */}
+          {activeTab === 'study' && (
+            <div className="space-y-6">
+              {dueCards.length === 0 ? (
+                <div className="text-center py-12">
+                  <Zap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">All caught up!</h3>
+                  <p className="text-gray-600 mb-4">No cards due for review right now.</p>
+                  <p className="text-sm text-gray-500">{stats.cardsUpcoming} cards coming up in the next 7 days</p>
+                </div>
+              ) : (
+                <>
+                  {/* Progress */}
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm text-gray-600">
+                      Card {currentCardIndex + 1} of {dueCards.length}
+                    </span>
+                    <div className="flex-1 mx-4 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary-600 transition-all"
+                        style={{ width: `${((currentCardIndex + 1) / dueCards.length) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Flashcard */}
+                  {currentCard && (
+                    <div className="max-w-2xl mx-auto">
+                      <div
+                        onClick={handleFlipCard}
+                        className={`relative h-64 cursor-pointer transition-all duration-500 transform-gpu ${
+                          isFlipped ? 'rotate-y-180' : ''
+                        }`}
+                        style={{ transformStyle: 'preserve-3d' }}
+                      >
+                        {/* Front */}
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br from-primary-500 to-purple-500 rounded-xl p-8 flex items-center justify-center text-white text-center ${
+                            isFlipped ? 'invisible' : 'visible'
+                          }`}
+                          style={{ backfaceVisibility: 'hidden' }}
+                        >
+                          <div>
+                            <p className="text-sm opacity-75 mb-4">Question</p>
+                            <p className="text-2xl font-semibold">{currentCard.front}</p>
+                            <p className="text-sm opacity-75 mt-6">Click to flip</p>
+                          </div>
+                        </div>
+
+                        {/* Back */}
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br from-green-500 to-teal-500 rounded-xl p-8 flex items-center justify-center text-white text-center transform rotate-y-180 ${
+                            isFlipped ? 'visible' : 'invisible'
+                          }`}
+                          style={{ backfaceVisibility: 'hidden' }}
+                        >
+                          <div>
+                            <p className="text-sm opacity-75 mb-4">Answer</p>
+                            <p className="text-2xl font-semibold">{currentCard.back}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Review Buttons */}
+                      {showingAnswer && (
+                        <div className="grid grid-cols-4 gap-3 mt-6">
+                          <button
+                            onClick={() => handleReview(0)}
+                            className="py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                          >
+                            Forgot
+                          </button>
+                          <button
+                            onClick={() => handleReview(3)}
+                            className="py-3 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors font-medium"
+                          >
+                            Hard
+                          </button>
+                          <button
+                            onClick={() => handleReview(4)}
+                            className="py-3 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors font-medium"
+                          >
+                            Good
+                          </button>
+                          <button
+                            onClick={() => handleReview(5)}
+                            className="py-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium"
+                          >
+                            Easy
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Create Tab */}
+          {activeTab === 'create' && (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <h3 className="text-xl font-semibold text-gray-800">Create New Flashcard</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Front (Question)
+                </label>
+                <textarea
+                  value={newCard.front}
+                  onChange={(e) => setNewCard({ ...newCard, front: e.target.value })}
+                  placeholder="Enter your question..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent h-24"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Back (Answer)
+                </label>
+                <textarea
+                  value={newCard.back}
+                  onChange={(e) => setNewCard({ ...newCard, back: e.target.value })}
+                  placeholder="Enter the answer..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent h-24"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Difficulty
+                </label>
+                <select
+                  value={newCard.difficulty}
+                  onChange={(e) => setNewCard({ ...newCard, difficulty: e.target.value as any })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleCreateCard}
+                className="w-full py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+              >
+                Create Flashcard
+              </button>
+            </div>
+          )}
+
+          {/* Browse Tab */}
+          {activeTab === 'browse' && (
+            <div className="space-y-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search flashcards..."
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Cards List */}
+              <div className="space-y-3">
+                {filteredCards.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">No flashcards yet. Create some!</p>
+                ) : (
+                  filteredCards.map((card) => (
+                    <div key={card.id} className="bg-gray-50 rounded-lg p-4 flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-800 mb-1">{card.front}</div>
+                        <div className="text-sm text-gray-600 mb-2">{card.back}</div>
+                        <div className="flex gap-2">
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            card.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
+                            card.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {card.difficulty}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
+                            Reviewed {card.reviewCount} times
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteCard(card.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Stats Tab */}
+          {activeTab === 'stats' && (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-gray-800">Performance Statistics</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h4 className="font-semibold text-gray-800 mb-4">Learning Progress</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-600">Cards Mastered</span>
+                        <span className="font-medium">{stats.cardsReviewed}/{stats.totalCards}</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-green-500"
+                          style={{ width: `${(stats.cardsReviewed / stats.totalCards) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-600">Success Rate</span>
+                        <span className="font-medium">{stats.successRate}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500"
+                          style={{ width: `${stats.successRate}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h4 className="font-semibold text-gray-800 mb-4">Review Schedule</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Due Today</span>
+                      <span className="text-2xl font-bold text-orange-600">{stats.cardsDue}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Coming This Week</span>
+                      <span className="text-2xl font-bold text-blue-600">{stats.cardsUpcoming}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

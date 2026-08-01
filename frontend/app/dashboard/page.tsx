@@ -1,0 +1,641 @@
+
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { BookOpen, MessageSquare, ClipboardCheck, Settings, Menu, X, Trash2, BarChart3, Clock, FileText, Download, Users, User, TrendingUp, Brain, Trophy, Calendar, Home } from 'lucide-react';
+import ChatWindow from '@/components/ChatWindow';
+import ChatInterface from '@/components/ChatInterface';
+import MasteryProgress from '@/components/MasteryProgress';
+import QuizModule from '@/components/QuizModule';
+import UploadArea from '@/components/UploadArea';
+import SettingsModal from '@/components/SettingsModal';
+import StudyStatistics from '@/components/StudyStatistics';
+import PomodoroTimer from '@/components/PomodoroTimer';
+import NoteTakingSystem from '@/components/NoteTakingSystem';
+import AdvancedAnalytics from '@/components/AdvancedAnalytics';
+import ExportMenu from '@/components/ExportMenu';
+import SocialHub from '@/components/SocialHub';
+import UserProfile from '@/components/UserProfile';
+import FlashcardSystem from '@/components/FlashcardSystem';
+import ThemeToggle from '@/components/ThemeToggle';
+import GamificationDashboard from '@/components/GamificationDashboard';
+import VoiceControls from '@/components/VoiceControls';
+import AIStudyPlanner from '@/components/AIStudyPlanner';
+import { createSession, listDocuments, deleteDocument } from '@/lib/api';
+import type { Session, Document, UploadResponse } from '@/lib/types';
+import { getCurrentUser, logout } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
+
+export default function Dashboard() {
+    const router = useRouter();
+    const [currentSession, setCurrentSession] = useState<Session | null>(null);
+    const [documents, setDocuments] = useState<Document[]>([]);
+    const [activeTab, setActiveTab] = useState<'chat' | 'quiz' | 'upload' | 'stats' | 'timer' | 'notes' | 'analytics' | 'social' | 'flashcards' | 'gamification' | 'planner'>('upload');
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [previousScore, setPreviousScore] = useState<number | undefined>();
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [exportMenuOpen, setExportMenuOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    // XP System state
+    const [showXPToast, setShowXPToast] = useState(false);
+    const [xpMessage, setXPMessage] = useState('');
+    const [xpAmount, setXPAmount] = useState(0);
+
+    // Safe date formatter - handles multiple date formats
+    const formatDate = (dateString: string | undefined) => {
+        if (!dateString) return 'Just now';
+
+        try {
+            // Try to parse the date
+            let date: Date;
+
+            // Check if it's a timestamp (number as string)
+            if (/^\d+$/.test(dateString)) {
+                date = new Date(parseInt(dateString));
+            } else {
+                // Try direct parsing (handles ISO, RFC formats, etc.)
+                date = new Date(dateString);
+            }
+
+            // Validate the date
+            if (isNaN(date.getTime())) {
+                console.log('Invalid date:', dateString);
+                return 'Just now';
+            }
+
+            // Format the date nicely
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            // Return relative time for recent dates
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+
+            // Return formatted date for older dates
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+            });
+        } catch (error) {
+            console.log('Date parsing error:', error, dateString);
+            return 'Just now';
+        }
+    };
+
+    // Check authentication - only on client
+    useEffect(() => {
+        setIsClient(true);
+        const user = getCurrentUser();
+        if (!user) {
+            router.push('/login');
+        } else {
+            setCurrentUser(user);
+
+            // Initialize XP system
+            try {
+                const lastLogin = localStorage.getItem(`last_login_${user.id}`);
+                const today = new Date().toDateString();
+
+                if (lastLogin !== today) {
+                    localStorage.setItem(`last_login_${user.id}`, today);
+                    showXPNotification(20, 'Daily login bonus!');
+                }
+            } catch (error) {
+                console.log('XP system initialization:', error);
+            }
+        }
+    }, [router]);
+
+    // Load documents function with useCallback to prevent infinite loops
+    const loadDocuments = useCallback(async () => {
+        try {
+            const response = await listDocuments();
+            setDocuments(response.documents);
+        } catch (error) {
+            console.error('Error loading documents:', error);
+        }
+    }, []);
+
+    // Load documents on mount
+    useEffect(() => {
+        loadDocuments();
+    }, [loadDocuments]);
+
+    const showXPNotification = (xp: number, message: string) => {
+        setXPAmount(xp);
+        setXPMessage(message);
+        setShowXPToast(true);
+
+        setTimeout(() => {
+            setShowXPToast(false);
+        }, 3000);
+    };
+
+    const handleUploadSuccess = async (uploadResponse: UploadResponse) => {
+        await loadDocuments();
+
+        // Award XP for upload
+        showXPNotification(75, 'Document uploaded!');
+
+        // Auto-create session for new document
+        try {
+            const session = await createSession(1, uploadResponse.id);
+            setCurrentSession(session);
+            setActiveTab('chat');
+        } catch (error) {
+            console.error('Error creating session:', error);
+        }
+    };
+
+    const handleDocumentSelect = async (document: Document) => {
+        try {
+            const session = await createSession(1, document.id);
+            setCurrentSession(session);
+            setActiveTab('chat');
+        } catch (error) {
+            console.error('Error creating session:', error);
+        }
+    };
+
+    const handleCompetencyUpdate = (newScore: number) => {
+        if (currentSession) {
+            setPreviousScore(currentSession.competency_score);
+            setCurrentSession({
+                ...currentSession,
+                competency_score: newScore
+            });
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!confirm('Are you sure you want to delete this document?')) return;
+
+        setDeletingId(id);
+        try {
+            await deleteDocument(id);
+            await loadDocuments();
+            if (currentSession?.document_id === id) {
+                setCurrentSession(null);
+            }
+        } catch (error) {
+            console.error('Error deleting document:', error);
+            alert('Failed to delete document');
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    const handleLogout = () => {
+        logout();
+        router.push('/login');
+    };
+
+    if (!isClient) {
+        return null;
+    }
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+            {/* Animated background orbs */}
+            <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute w-[600px] h-[600px] bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
+                <div className="absolute w-[400px] h-[400px] bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl top-1/3 -right-32 animate-pulse" style={{ animationDelay: '1s' }}></div>
+                <div className="absolute w-[500px] h-[500px] bg-gradient-to-br from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl -bottom-48 left-1/3 animate-pulse" style={{ animationDelay: '2s' }}></div>
+            </div>
+
+            {/* XP Toast Notification */}
+            {showXPToast && (
+                <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 min-w-[280px]">
+                        <div className="text-2xl">✨</div>
+                        <div className="flex-1">
+                            <div className="font-bold text-lg">+{xpAmount} XP</div>
+                            <div className="text-sm opacity-90">{xpMessage}</div>
+                        </div>
+                        <TrendingUp className="w-5 h-5" />
+                    </div>
+                </div>
+            )}
+
+            <div className="relative">
+                {/* Header */}
+                <header className="sticky top-0 z-40 bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl border-b border-white/40 dark:border-gray-700/40 shadow-lg">
+                    <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-16">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors lg:hidden"
+                                >
+                                    <Menu className="w-6 h-6" />
+                                </button>
+                                <button
+                                    onClick={() => router.push('/')}
+                                    className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                                    title="Go to Home"
+                                >
+                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                                        <BookOpen className="w-6 h-6 text-white" />
+                                    </div>
+                                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                        Lumina AI Tutor
+                                    </h1>
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => router.push('/')}
+                                    className="hidden sm:flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    title="Go to Home"
+                                >
+                                    <Home className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Home</span>
+                                </button>
+                                <ThemeToggle />
+                                <button
+                                    onClick={() => setExportMenuOpen(true)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    title="Export Data"
+                                >
+                                    <Download className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                                </button>
+                                <button
+                                    onClick={() => setSettingsOpen(true)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                >
+                                    <Settings className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                                </button>
+                                {currentUser && (
+                                    <button
+                                        onClick={() => setProfileOpen(true)}
+                                        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
+                                    >
+                                        <User className="w-5 h-5" />
+                                        <span className="font-medium hidden sm:inline">{currentUser.username}</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="flex max-w-[1800px] mx-auto">
+                    {/* Sidebar */}
+                    <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                        } fixed lg:sticky top-16 left-0 z-30 w-64 h-[calc(100vh-4rem)] bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-r border-white/40 dark:border-gray-700/40 transition-transform duration-300 ease-in-out lg:translate-x-0 overflow-y-auto rounded-3xl m-4 shadow-2xl`}>
+                        <div className="p-4">
+                            <div className="mb-6">
+                                <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-3">
+                                    Your Documents
+                                </h2>
+                                <div className="space-y-2">
+                                    {documents.length === 0 ? (
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 px-3 py-2">No documents yet</p>
+                                    ) : (
+                                        documents.map((doc) => (
+                                            <div
+                                                key={doc.id}
+                                                className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all ${currentSession?.document_id === doc.id
+                                                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+                                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                                    }`}
+                                                onClick={() => handleDocumentSelect(doc)}
+                                            >
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium truncate">{doc.filename}</p>
+                                                    <p className={`text-xs truncate ${currentSession?.document_id === doc.id
+                                                        ? 'text-blue-100'
+                                                        : 'text-gray-500 dark:text-gray-400'
+                                                        }`}>
+                                                        {formatDate(doc.created_at)}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(doc.id);
+                                                    }}
+                                                    disabled={deletingId === doc.id}
+                                                    className={`ml-2 p-1 rounded-lg transition-colors ${currentSession?.document_id === doc.id
+                                                        ? 'hover:bg-white/20 text-white'
+                                                        : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-600 dark:hover:text-red-400'
+                                                        } ${deletingId === doc.id ? 'opacity-50' : 'opacity-0 group-hover:opacity-100'}`}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {currentSession && (
+                                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                    <MasteryProgress
+                                        currentScore={currentSession.competency_score}
+                                        previousScore={previousScore}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="flex-1 p-4 lg:p-6">
+                        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 dark:border-gray-700/40 overflow-hidden">
+                            {/* Tabs */}
+                            <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+                                <div className="flex min-w-max px-6">
+                                    <button
+                                        onClick={() => setActiveTab('upload')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'upload'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                                            <FileText className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Upload</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('chat')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'chat'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                                            <MessageSquare className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Learn</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('quiz')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'quiz'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                                            <ClipboardCheck className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Quiz</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('stats')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'stats'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                                            <BarChart3 className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Stats</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('analytics')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'analytics'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center">
+                                            <TrendingUp className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Analytics</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('timer')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'timer'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
+                                            <Clock className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Timer</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('notes')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'notes'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                                            <FileText className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Notes</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('social')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'social'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
+                                            <Users className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Social</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('flashcards')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'flashcards'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-violet-500 to-purple-500 rounded-lg flex items-center justify-center">
+                                            <Brain className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Flashcards</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('gamification')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'gamification'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center">
+                                            <Trophy className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Rewards</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('planner')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'planner'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                                            <Calendar className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Planner</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Tab Content */}
+                            <div className="min-h-[600px] p-6">
+                                {activeTab === 'upload' && (
+                                    <UploadArea onUploadSuccess={handleUploadSuccess} />
+                                )}
+
+                                {/* ← UPDATED LEARN TAB WITH CHATINTERFACE */}
+                                {activeTab === 'chat' && (
+                                    <div className="space-y-6">
+                                        {currentSession ? (
+                                            <ChatInterface sessionId={currentSession.id} />
+                                        ) : (
+                                            <div className="text-center py-12">
+                                                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                                    <BookOpen className="w-10 h-10 text-white" />
+                                                </div>
+                                                <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-3">
+                                                    No Document Selected
+                                                </h3>
+                                                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                                                    Please upload and select a document to start learning
+                                                </p>
+                                                <button
+                                                    onClick={() => setActiveTab('upload')}
+                                                    className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                                                >
+                                                    Upload Document
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'quiz' && currentSession && (
+                                    <QuizModule sessionId={currentSession.id} />
+                                )}
+
+                                {activeTab === 'stats' && (
+                                    <StudyStatistics />
+                                )}
+
+                                {activeTab === 'analytics' && (
+                                    <AdvancedAnalytics />
+                                )}
+
+                                {activeTab === 'timer' && (
+                                    <PomodoroTimer />
+                                )}
+
+                                {activeTab === 'notes' && (
+                                    <NoteTakingSystem />
+                                )}
+
+                                {activeTab === 'social' && (
+                                    <SocialHub />
+                                )}
+
+                                {activeTab === 'flashcards' && (
+                                    <FlashcardSystem />
+                                )}
+
+                                {activeTab === 'gamification' && (
+                                    <GamificationDashboard />
+                                )}
+
+                                {activeTab === 'planner' && (
+                                    <AIStudyPlanner />
+                                )}
+                            </div>
+                        </div>
+                    </main>
+                </div>
+
+            </div>
+
+            <SettingsModal
+                isOpen={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+            />
+
+            <ExportMenu
+                isOpen={exportMenuOpen}
+                onClose={() => setExportMenuOpen(false)}
+            />
+
+            {profileOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-white">User Profile</h2>
+                            <button
+                                onClick={() => setProfileOpen(false)}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <UserProfile />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style jsx>{`
+        @keyframes slide-in-right {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.3s ease-out;
+        }
+      `}</style>
+        </div>
+    );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

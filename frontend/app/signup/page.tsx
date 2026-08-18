@@ -243,7 +243,7 @@ export default function SignupPage() {
       return;
     }
 
-    const result = signUp(formData.email, formData.username, formData.password);
+    const result = await signUp(formData.username, formData.email, formData.password);
 
     if (!result.success) {
       setError(result.error || 'Signup failed');

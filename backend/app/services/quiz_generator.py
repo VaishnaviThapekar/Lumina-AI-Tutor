@@ -1,4 +1,4 @@
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
 import json
 from typing import List, Dict
@@ -13,10 +13,11 @@ class QuizGenerator:
     
     def __init__(self):
         self.vector_store = VectorStoreService()
-        self.llm = ChatOpenAI(
-            model=settings.OPENAI_MODEL,
-            openai_api_key=settings.OPENAI_API_KEY,
-            temperature=0.8
+        self.llm = ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
+            google_api_key=settings.GEMINI_API_KEY,
+            temperature=0.8,
+            convert_system_message_to_human=True
         )
     
     def generate_quiz(

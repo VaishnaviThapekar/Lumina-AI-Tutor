@@ -17,10 +17,8 @@ logger = logging.getLogger(__name__)
 class VectorStoreService:
     """Service for managing vector embeddings and similarity search"""
     
-    # Gemini's gemini-embedding-001 model returns 3072-dimensional vectors natively.
-    # (output_dimensionality truncation isn't reliably honored by all SDK versions,
-    # so we match the index to the model's real native output instead.)
-    EMBEDDING_DIMENSION = 3072
+    # Google's embedding-001 model produces 768-dimensional vectors
+    EMBEDDING_DIMENSION = 768
 
     def __init__(self):
         """Initialize Pinecone and embeddings"""
@@ -48,8 +46,8 @@ class VectorStoreService:
         
         # Initialize embeddings
         self.embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/gemini-embedding-001",
-    google_api_key=settings.GEMINI_API_KEY,
+    model="models/embedding-001",
+    google_api_key=settings.GEMINI_API_KEY
 )
         
         logger.info(f"Vector store initialized with index: {settings.PINECONE_INDEX_NAME}")

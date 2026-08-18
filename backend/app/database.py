@@ -7,7 +7,13 @@ from app.config import settings
 
 
 # Database engine
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+# Render (and similar providers) give connection strings starting with
+# "postgres://", but SQLAlchemy 1.4+ requires the "postgresql://" scheme.
+_db_url = settings.DATABASE_URL
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(_db_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

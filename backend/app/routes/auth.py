@@ -6,6 +6,7 @@ import secrets
 import hashlib
 
 from app.database import get_db, User
+from app.config import settings
 from app.schemas import UserCreate, UserLogin, UserResponse, TokenResponse
 from app.utils.security import hash_password, verify_password, create_access_token
 from app.dependencies import get_current_user
@@ -78,7 +79,8 @@ def generate_reset_token(email: str) -> str:
 
 def send_reset_email(email: str, token: str):
     """Send password reset email (prints to console for now)"""
-    reset_link = f"http://localhost:3000/reset-password?token={token}"
+    frontend_url = settings.ALLOWED_ORIGINS.split(",")[0].strip()
+    reset_link = f"{frontend_url}/reset-password?token={token}"
     
     print(f"""
     ========================================

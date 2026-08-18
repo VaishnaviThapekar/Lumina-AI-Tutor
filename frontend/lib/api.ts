@@ -17,6 +17,32 @@ const api = axios.create({
   },
 });
 
+// Attach the JWT to every request if the user is logged in
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('lumina_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+// If the token is invalid/expired, clear the session and bounce to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('lumina_token');
+      localStorage.removeItem('lumina_user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Document API
 export const uploadDocument = async (file: File): Promise<UploadResponse> => {
   const formData = new FormData();
@@ -42,11 +68,9 @@ export const deleteDocument = async (documentId: number): Promise<void> => {
 
 // Session API
 export const createSession = async (
-  userId: number,
   documentId: number
 ): Promise<Session> => {
   const response = await api.post('/api/chat/session', {
-    user_id: userId,
     document_id: documentId,
   });
   
@@ -120,8 +144,8 @@ export const submitQuiz = async (
   return response.data;
 };
 
-export const getQuizHistory = async (userId: number) => {
-  const response = await api.get(`/api/quiz/history/${userId}`);
+export const getQuizHistory = async () => {
+  const response = await api.get('/api/quiz/history');
   return response.data;
 };
 
@@ -160,4 +184,56 @@ export const updateLearning = async (userId: number, learning: any) => {
   const response = await api.put(`/api/settings/${userId}/learning`, learning);
   return response.data;
 };
+// Flashcards API
+export interface Flashcard {
+  id: number;
+  front: string;
+  back: string;
+  ease_factor: number;
+  interval_days: number;
+  repetitions: number;
+  next_review_at: string;
+}
+
+export const generateFlashcards = async (
+  documentId: number,
+  numCards: number = 10
+): Promise<Flashcard[]> => {
+  const response = await api.post('/api/flashcards/generate', {
+    document_id: documentId,
+    num_cards: numCards,
+  });
+  return response.data;
+};
+
+export const getDueFlashcards = async (documentId?: number): Promise<Flashcard[]> => {
+  const response = await api.get('/api/flashcards/due', {
+    params: documentId ? { document_id: documentId } : {},
+  });
+  return response.data;
+};
+
+export const getAllFlashcards = async (documentId?: number): Promise<Flashcard[]> => {
+  const response = await api.get('/api/flashcards/all', {
+    params: documentId ? { document_id: documentId } : {},
+  });
+  return response.data;
+};
+
+// quality: 0-5 per SM-2 (0-2 = forgot, 3 = hard, 4 = good, 5 = easy/perfect)
+export const reviewFlashcard = async (
+  flashcardId: number,
+  quality: number
+): Promise<Flashcard> => {
+  const response = await api.post('/api/flashcards/review', {
+    flashcard_id: flashcardId,
+    quality,
+  });
+  return response.data;
+};
+
+export const deleteFlashcard = async (flashcardId: number): Promise<void> => {
+  await api.delete(`/api/flashcards/${flashcardId}`);
+};
+
 export default api;

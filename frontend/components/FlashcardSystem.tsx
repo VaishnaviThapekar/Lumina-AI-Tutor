@@ -12,9 +12,11 @@ import {
   getAllDecks,
   createDeck,
   getDeckCards,
+  generateFlashcardsFromDocument,
   Flashcard,
   FlashcardDeck,
 } from '@/lib/flashcards';
+import { listDocuments } from '@/lib/api';
 
 export default function FlashcardSystem() {
   const [activeTab, setActiveTab] = useState<'study' | 'create' | 'browse' | 'stats'>('study');
@@ -30,9 +32,41 @@ export default function FlashcardSystem() {
   const [newCard, setNewCard] = useState({ front: '', back: '', difficulty: 'medium' as const });
   const [searchQuery, setSearchQuery] = useState('');
 
+  // AI generation form
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
+  const [genCount, setGenCount] = useState(10);
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState('');
+
   useEffect(() => {
     loadData();
+    listDocuments()
+      .then((res) => {
+        setDocuments(res.documents || []);
+        if (res.documents?.length > 0) setSelectedDocId(res.documents[0].id);
+      })
+      .catch(() => {
+        // non-fatal — just means the "generate from document" option won't have choices
+      });
   }, []);
+
+  const handleGenerateFromDocument = async () => {
+    if (!selectedDocId) {
+      setGenError('Upload a document first.');
+      return;
+    }
+    setGenerating(true);
+    setGenError('');
+    try {
+      await generateFlashcardsFromDocument(selectedDocId, genCount);
+      loadData();
+      alert(`Generated ${genCount} flashcards from your document!`);
+    } catch (err: any) {
+      setGenError(err?.message || 'Could not generate flashcards. Is the backend running?');
+    }
+    setGenerating(false);
+  };
 
   const loadData = () => {
     setFlashcards(getAllFlashcards());
@@ -291,6 +325,68 @@ export default function FlashcardSystem() {
           {/* Create Tab */}
           {activeTab === 'create' && (
             <div className="max-w-2xl mx-auto space-y-6">
+              {/* AI Generation from Document */}
+              <div className="bg-gradient-to-br from-primary-50 to-purple-50 border border-primary-200 rounded-xl p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="w-5 h-5 text-primary-600" />
+                  <h3 className="text-lg font-semibold text-gray-800">Generate with AI</h3>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Automatically create flashcards from one of your uploaded documents.
+                </p>
+
+                {genError && (
+                  <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                    {genError}
+                  </div>
+                )}
+
+                {documents.length === 0 ? (
+                  <p className="text-sm text-gray-500 italic">
+                    Upload a document first to generate flashcards from it.
+                  </p>
+                ) : (
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <select
+                      value={selectedDocId ?? ''}
+                      onChange={(e) => setSelectedDocId(Number(e.target.value))}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+                    >
+                      {documents.map((doc) => (
+                        <option key={doc.id} value={doc.id}>
+                          {doc.filename}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={genCount}
+                      onChange={(e) => setGenCount(Number(e.target.value))}
+                      className="px-4 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value={5}>5 cards</option>
+                      <option value={10}>10 cards</option>
+                      <option value={20}>20 cards</option>
+                    </select>
+                    <button
+                      onClick={handleGenerateFromDocument}
+                      disabled={generating}
+                      className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {generating ? 'Generating...' : 'Generate'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-3 bg-white text-gray-500">Or create manually</span>
+                </div>
+              </div>
+
               <h3 className="text-xl font-semibold text-gray-800">Create New Flashcard</h3>
 
               <div>

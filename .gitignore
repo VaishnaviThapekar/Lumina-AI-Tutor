@@ -23,6 +23,11 @@ out/
 backend/uploads/
 frontend/.next/
 
+# Database (contains real user data - never commit)
+*.db
+*.sqlite
+*.sqlite3
+
 # OS / editor
 .DS_Store
 .vscode/

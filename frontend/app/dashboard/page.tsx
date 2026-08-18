@@ -149,7 +149,7 @@ export default function Dashboard() {
 
         // Auto-create session for new document
         try {
-            const session = await createSession(1, uploadResponse.id);
+            const session = await createSession(uploadResponse.id);
             setCurrentSession(session);
             setActiveTab('chat');
         } catch (error) {
@@ -159,7 +159,7 @@ export default function Dashboard() {
 
     const handleDocumentSelect = async (document: Document) => {
         try {
-            const session = await createSession(1, document.id);
+            const session = await createSession(document.id);
             setCurrentSession(session);
             setActiveTab('chat');
         } catch (error) {
@@ -318,7 +318,7 @@ export default function Dashboard() {
                                                         ? 'text-blue-100'
                                                         : 'text-gray-500 dark:text-gray-400'
                                                         }`}>
-                                                        {formatDate(doc.created_at)}
+                                                        {formatDate(doc.uploaded_at)}
                                                     </p>
                                                 </div>
                                                 <button
@@ -536,7 +536,15 @@ export default function Dashboard() {
                                 )}
 
                                 {activeTab === 'quiz' && currentSession && (
-                                    <QuizModule sessionId={currentSession.id} />
+                                    <QuizModule
+                                        sessionId={currentSession.id}
+                                        documentId={currentSession.document_id}
+                                        competencyScore={currentSession.competency_score}
+                                        onCompetencyUpdate={(newScore: number) => {
+                                            setCurrentSession({ ...currentSession, competency_score: newScore });
+                                        }}
+                                        onClose={() => setActiveTab('chat')}
+                                    />
                                 )}
 
                                 {activeTab === 'stats' && (

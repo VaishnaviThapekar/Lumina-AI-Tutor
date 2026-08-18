@@ -282,34 +282,55 @@ export const getFlashcardStats = () => {
   };
 };
 
-// ==================== AI GENERATION (Placeholder) ====================
+// ==================== AI GENERATION (real, calls the backend) ====================
 
+// Kept for backward compatibility with any existing callers; now delegates
+// to real backend generation instead of returning hardcoded placeholder cards.
 export const generateFlashcardsFromText = async (
   text: string,
   count: number = 10
 ): Promise<Array<{ front: string; back: string; difficulty: 'easy' | 'medium' | 'hard' }>> => {
-  // This will be implemented with OpenAI API
-  // For now, return placeholder
-  
-  // In production, this would call:
-  // const response = await fetch('/api/generate-flashcards', {
-  //   method: 'POST',
-  //   body: JSON.stringify({ text, count })
-  // });
-  
-  // Placeholder implementation
-  return [
-    {
-      front: "What is the main topic of this document?",
-      back: "The document discusses various learning strategies and techniques.",
-      difficulty: 'easy'
+  console.warn(
+    'generateFlashcardsFromText is deprecated — use generateFlashcardsFromDocument(documentId, count) instead, which calls the real backend AI generator.'
+  );
+  return [];
+};
+
+// Calls the real backend, which uses your uploaded document's content (via RAG)
+// and an LLM to write flashcards, then saves them into local storage so they
+// show up immediately in the existing study/browse/stats UI.
+export const generateFlashcardsFromDocument = async (
+  documentId: number,
+  count: number = 10
+): Promise<Flashcard[]> => {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const token = typeof window !== 'undefined' ? localStorage.getItem('lumina_token') : null;
+
+  const response = await fetch(`${API_BASE_URL}/api/flashcards/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    {
-      front: "Define spaced repetition",
-      back: "A learning technique that involves reviewing information at increasing intervals over time.",
-      difficulty: 'medium'
-    }
-  ];
+    body: JSON.stringify({ document_id: documentId, num_cards: count }),
+  });
+
+  if (!response.ok) {
+    const errBody = await response.json().catch(() => ({}));
+    throw new Error(errBody.detail || `Failed to generate flashcards (${response.status})`);
+  }
+
+  const generated: Array<{ front: string; back: string }> = await response.json();
+
+  // Save into the existing local flashcard store (difficulty defaults to 'medium';
+  // the local SM-2 scheduler will adjust based on actual review performance)
+  const cardsToCreate = generated.map((c) => ({
+    front: c.front,
+    back: c.back,
+    difficulty: 'medium' as const,
+  }));
+
+  return createMultipleFlashcards(cardsToCreate, documentId);
 };
 
 // ==================== SEARCH & FILTER ====================

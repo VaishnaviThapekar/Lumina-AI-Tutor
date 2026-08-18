@@ -164,6 +164,7 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { BookOpen, Mail, Lock, Eye, EyeOff, Home, Sparkles, Zap, Brain } from 'lucide-react';
 import { signIn as localSignIn } from '@/lib/auth';
+import axios from 'axios';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -182,15 +183,22 @@ export default function LoginPage() {
     setMounted(true);
   }, []);
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetEmail) {
       setError('Please enter your email');
       return;
     }
 
-    // Simulate password reset email
-    console.log('Password reset email sent to:', resetEmail);
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      await axios.post(`${API_BASE_URL}/api/forgot-password`, { email: resetEmail });
+    } catch (err) {
+      // The backend intentionally returns success even for unknown emails
+      // (to avoid leaking which emails are registered), so this rarely fires.
+      console.error('Forgot password request failed:', err);
+    }
+
     setResetSuccess(true);
     setTimeout(() => {
       setShowForgotPassword(false);
@@ -210,7 +218,7 @@ export default function LoginPage() {
       return;
     }
 
-    const result = localSignIn(email, password, true);
+    const result = await localSignIn(email, password);
 
     if (!result.success) {
       setError(result.error || 'Login failed');

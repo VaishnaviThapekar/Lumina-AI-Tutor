@@ -1,4 +1,4 @@
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from typing import List, Dict, Tuple
 from app.services.vector_store import VectorStoreService
@@ -19,10 +19,11 @@ class RAGService:
         self.adaptive_engine = AdaptiveEngine()
         
         # Initialize LLM
-        self.llm = ChatOpenAI(
-            model=settings.OPENAI_MODEL,
-            openai_api_key=settings.OPENAI_API_KEY,
-            temperature=0.7
+        self.llm = ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
+            google_api_key=settings.GEMINI_API_KEY,
+            temperature=0.7,
+            convert_system_message_to_human=True
         )
     
     def generate_response(
@@ -61,8 +62,12 @@ class RAGService:
         system_prompt = self.adaptive_engine.get_system_prompt(teaching_mode, context)
         
         # Step 5: Prepare messages for LLM
-        messages = [SystemMessage(content=system_prompt)]
-        
+        # Note: this Gemini LangChain integration handles SystemMessage
+        # unreliably once conversation history is involved, so we fold the
+        # system instructions into the current turn instead of using a
+        # separate SystemMessage.
+        messages = []
+
         # Add chat history if available
         if chat_history:
             for msg in chat_history[-6:]:  # Last 6 messages for context
@@ -70,9 +75,11 @@ class RAGService:
                     messages.append(HumanMessage(content=msg['content']))
                 elif msg['role'] == 'assistant':
                     messages.append(AIMessage(content=msg['content']))
-        
-        # Add current query
-        messages.append(HumanMessage(content=query))
+
+        # Add current query, with system instructions folded in
+        messages.append(HumanMessage(
+            content=f"{system_prompt}\n\n---\n\nStudent's question: {query}"
+        ))
         
         # Step 6: Generate response
         response = self.llm.invoke(messages)

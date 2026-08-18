@@ -306,12 +306,13 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
         setLoading(true);
 
         try {
+            const token = localStorage.getItem('lumina_token');
             const response = await fetch('http://localhost:8000/api/chat/message', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
-                credentials: 'include',
                 body: JSON.stringify({
                     message: textToSend,
                     session_id: sessionId,

@@ -134,13 +134,14 @@ app = FastAPI(
 )
 
 # CORS middleware - MUST BE FIRST!
+# Reads allowed origins from the ALLOWED_ORIGINS env var (comma-separated),
+# falling back to localhost for local development. Set this in Render's
+# dashboard to your real Vercel URL(s) in production.
+_cors_origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

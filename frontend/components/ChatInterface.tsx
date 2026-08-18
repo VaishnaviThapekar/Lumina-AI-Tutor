@@ -307,7 +307,8 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
 
         try {
             const token = localStorage.getItem('lumina_token');
-            const response = await fetch('http://localhost:8000/api/chat/message', {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${API_BASE_URL}/api/chat/message`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

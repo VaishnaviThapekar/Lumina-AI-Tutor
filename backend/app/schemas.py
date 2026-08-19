@@ -25,6 +25,11 @@ class UserLogin(BaseModel):
     password: str
 
 
+class OAuthLoginRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

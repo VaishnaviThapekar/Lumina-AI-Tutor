@@ -14,7 +14,7 @@ export default function OAuthUserSync() {
                 // This is an OAuth user, sync to localStorage
                 const users = JSON.parse(localStorage.getItem('lumina_users') || '[]');
 
-                const existingUser = users.find((u: any) => u.email === session.user.email);
+                const existingUser = users.find((u: any) => u.email === session.user?.email);
 
                 if (!existingUser) {
                     // Create new user in localStorage

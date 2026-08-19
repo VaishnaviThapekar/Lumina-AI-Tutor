@@ -111,7 +111,7 @@ export const exportStatsToText = (stats: StudyStats): void => {
   textContent += `This Week: ${formatMinutes(stats.thisWeekMinutes)}\n`;
   textContent += `Last Week: ${formatMinutes(stats.lastWeekMinutes)}\n`;
   const weeklyChange = stats.lastWeekMinutes > 0 
-    ? ((stats.thisWeekMinutes - stats.lastWeekMinutes) / stats.lastWeekMinutes * 100).toFixed(1)
+    ? Number((((stats.thisWeekMinutes - stats.lastWeekMinutes) / stats.lastWeekMinutes) * 100).toFixed(1))
     : 0;
   textContent += `Change: ${weeklyChange > 0 ? '+' : ''}${weeklyChange}%\n`;
 

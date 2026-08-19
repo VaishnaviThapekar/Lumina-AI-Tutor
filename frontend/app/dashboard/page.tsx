@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { BookOpen, MessageSquare, ClipboardCheck, Settings, Menu, X, Trash2, BarChart3, Clock, FileText, Download, Users, User, TrendingUp, Brain, Trophy, Calendar, Home } from 'lucide-react';
 import ChatWindow from '@/components/ChatWindow';
 import ChatInterface from '@/components/ChatInterface';
@@ -93,28 +94,57 @@ export default function Dashboard() {
     };
 
     // Check authentication - only on client
+    const { data: session, status: sessionStatus } = useSession();
+
+    const initUserSession = (user: any) => {
+        setCurrentUser(user);
+
+        // Initialize XP system
+        try {
+            const lastLogin = localStorage.getItem(`last_login_${user.id}`);
+            const today = new Date().toDateString();
+
+            if (lastLogin !== today) {
+                localStorage.setItem(`last_login_${user.id}`, today);
+                showXPNotification(20, 'Daily login bonus!');
+            }
+        } catch (error) {
+            console.log('XP system initialization:', error);
+        }
+    };
+
     useEffect(() => {
         setIsClient(true);
+
         const user = getCurrentUser();
-        if (!user) {
-            router.push('/login');
-        } else {
-            setCurrentUser(user);
-
-            // Initialize XP system
-            try {
-                const lastLogin = localStorage.getItem(`last_login_${user.id}`);
-                const today = new Date().toDateString();
-
-                if (lastLogin !== today) {
-                    localStorage.setItem(`last_login_${user.id}`, today);
-                    showXPNotification(20, 'Daily login bonus!');
-                }
-            } catch (error) {
-                console.log('XP system initialization:', error);
-            }
+        if (user) {
+            initUserSession(user);
+            return;
         }
-    }, [router]);
+
+        // No backend token yet. If we came in via Google/GitHub, NextAuth's
+        // session exists but our OAuthUserSync component needs a brief
+        // moment to exchange it for a real backend token — wait for that
+        // instead of immediately bouncing to /login.
+        if (sessionStatus === 'loading') {
+            return; // effect re-runs once status settles
+        }
+
+        if (sessionStatus === 'authenticated') {
+            const timer = setTimeout(() => {
+                const syncedUser = getCurrentUser();
+                if (syncedUser) {
+                    initUserSession(syncedUser);
+                } else {
+                    router.push('/login');
+                }
+            }, 1500);
+            return () => clearTimeout(timer);
+        }
+
+        // Not authenticated via NextAuth either — genuinely logged out
+        router.push('/login');
+    }, [router, sessionStatus]);
 
     // Load documents function with useCallback to prevent infinite loops
     const loadDocuments = useCallback(async () => {

@@ -97,6 +97,27 @@ export const signIn = async (
 export const login = signIn;
 export const signup = signUp;
 
+// ---- OAuth sync: called when a NextAuth session exists but we don't yet
+// have a real backend token (i.e. right after Google/GitHub sign-in) ----
+
+export const syncOAuthSession = async (
+  email: string,
+  name?: string | null
+): Promise<AuthResult> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/auth/oauth-login`, {
+      email,
+      name: name || undefined,
+    });
+    const { access_token, user } = response.data;
+    const enriched = storeSession(access_token, user);
+    return { success: true, user: enriched };
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail;
+    return { success: false, error: detail || 'Could not complete sign-in.' };
+  }
+};
+
 // ---- Legacy compatibility shims ----
 // These exist so older components (UserProfile, AuthGuard, social features)
 // still compile against the real backend auth. Some are honest "not wired up

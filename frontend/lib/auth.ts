@@ -51,6 +51,14 @@ export const isAuthenticated = (): boolean => {
 export const logout = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  // Also sign out of NextAuth (Google/GitHub session), otherwise a stale
+  // provider session lingers and the next "sign in" silently reuses the
+  // same account instead of prompting fresh.
+  if (typeof window !== 'undefined') {
+    import('next-auth/react').then(({ signOut }) => {
+      signOut({ redirect: false });
+    });
+  }
 };
 
 // ---- Real signup / login against the backend ----

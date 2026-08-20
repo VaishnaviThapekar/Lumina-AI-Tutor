@@ -1,7 +1,9 @@
 # backend/app/api/settings.py
 """
 User Settings API
-Handles user preferences, notifications, learning settings, etc.
+Handles user preferences, notifications, learning settings, profile editing,
+password changes, and account deletion — all scoped to the authenticated
+user, never by a raw user_id in the URL.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,6 +12,8 @@ from pydantic import BaseModel
 from typing import Optional
 
 from app.database import get_db, User
+from app.dependencies import get_current_user
+from app.utils.security import hash_password, verify_password
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -42,104 +46,152 @@ class UserSettings(BaseModel):
     learning: LearningPreferences
 
 
-# GET user settings
-@router.get("/{user_id}")
-async def get_user_settings(
-    user_id: int,
-    db: Session = Depends(get_db)
-):
-    """Get all settings for a user"""
-    user = db.query(User).filter(User.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Get user settings (or defaults if not set)
-    settings = {
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class AccountDeleteRequest(BaseModel):
+    password: str
+
+
+def _settings_payload(user: User) -> dict:
+    return {
         "profile": {
             "username": user.username,
             "email": user.email
         },
         "notifications": {
-            "quiz_reminders": getattr(user, 'quiz_reminders', True),
-            "progress_updates": getattr(user, 'progress_updates', True),
-            "feature_announcements": getattr(user, 'feature_announcements', False)
+            "quiz_reminders": user.quiz_reminders,
+            "progress_updates": user.progress_updates,
+            "feature_announcements": user.feature_announcements
         },
         "appearance": {
-            "theme": getattr(user, 'theme', 'light')
+            "theme": user.theme
         },
         "learning": {
-            "default_quiz_difficulty": getattr(user, 'default_quiz_difficulty', 'mixed'),
-            "questions_per_quiz": getattr(user, 'questions_per_quiz', 5)
+            "default_quiz_difficulty": user.default_quiz_difficulty,
+            "questions_per_quiz": user.questions_per_quiz
         }
     }
-    
-    return settings
+
+
+# GET current user's settings
+@router.get("")
+async def get_user_settings(
+    current_user: User = Depends(get_current_user),
+):
+    """Get all settings for the authenticated user"""
+    return _settings_payload(current_user)
 
 
 # UPDATE profile settings
-@router.put("/{user_id}/profile")
+@router.put("/profile")
 async def update_profile(
-    user_id: int,
     profile: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Update user profile information"""
-    user = db.query(User).filter(User.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
+    """Update the authenticated user's profile information"""
     if profile.username:
-        # Check if username already exists
         existing = db.query(User).filter(
             User.username == profile.username,
-            User.id != user_id
+            User.id != current_user.id
         ).first()
         if existing:
             raise HTTPException(status_code=400, detail="Username already taken")
-        user.username = profile.username
-    
+        current_user.username = profile.username
+
     if profile.email:
-        # Check if email already exists
         existing = db.query(User).filter(
             User.email == profile.email,
-            User.id != user_id
+            User.id != current_user.id
         ).first()
         if existing:
             raise HTTPException(status_code=400, detail="Email already taken")
-        user.email = profile.email
-    
+        current_user.email = profile.email
+
     db.commit()
-    db.refresh(user)
-    
+    db.refresh(current_user)
+
     return {
         "message": "Profile updated successfully",
-        "username": user.username,
-        "email": user.email
+        "username": current_user.username,
+        "email": current_user.email
     }
 
 
+# CHANGE password
+@router.put("/password")
+async def change_password(
+    request: PasswordChangeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Change the authenticated user's password"""
+    if not verify_password(request.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if len(request.new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+
+    current_user.hashed_password = hash_password(request.new_password)
+    db.commit()
+
+    return {"message": "Password changed successfully"}
+
+
+# DELETE account
+@router.delete("/account")
+async def delete_account(
+    request: AccountDeleteRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Permanently delete the authenticated user's account and all their data
+    (documents, sessions, quiz attempts, flashcards). Requires re-entering
+    the password as a safety confirmation.
+    """
+    if not verify_password(request.password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Password is incorrect")
+
+    # Import here to avoid circular imports at module load time
+    from app.database import Document, LearningSession, ChatMessage, QuizAttempt, Flashcard
+
+    user_id = current_user.id
+
+    # Delete dependent rows first (no cascade configured on these FKs)
+    db.query(Flashcard).filter(Flashcard.user_id == user_id).delete()
+    db.query(QuizAttempt).filter(QuizAttempt.user_id == user_id).delete()
+
+    session_ids = [s.id for s in db.query(LearningSession).filter(LearningSession.user_id == user_id).all()]
+    if session_ids:
+        db.query(ChatMessage).filter(ChatMessage.session_id.in_(session_ids)).delete(synchronize_session=False)
+    db.query(LearningSession).filter(LearningSession.user_id == user_id).delete()
+
+    db.query(Document).filter(Document.user_id == user_id).delete()
+
+    db.delete(current_user)
+    db.commit()
+
+    return {"message": "Account deleted"}
+
+
 # UPDATE notification settings
-@router.put("/{user_id}/notifications")
+@router.put("/notifications")
 async def update_notifications(
-    user_id: int,
     notifications: NotificationSettings,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update notification preferences"""
-    user = db.query(User).filter(User.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Store in user object (you may want to create a separate Settings table)
-    user.quiz_reminders = notifications.quiz_reminders
-    user.progress_updates = notifications.progress_updates
-    user.feature_announcements = notifications.feature_announcements
-    
+    current_user.quiz_reminders = notifications.quiz_reminders
+    current_user.progress_updates = notifications.progress_updates
+    current_user.feature_announcements = notifications.feature_announcements
+
     db.commit()
-    
+
     return {
         "message": "Notification settings updated",
         "settings": notifications.dict()
@@ -147,25 +199,19 @@ async def update_notifications(
 
 
 # UPDATE appearance settings
-@router.put("/{user_id}/appearance")
+@router.put("/appearance")
 async def update_appearance(
-    user_id: int,
     appearance: AppearanceSettings,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update appearance preferences"""
-    user = db.query(User).filter(User.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
     if appearance.theme not in ["light", "dark", "auto"]:
         raise HTTPException(status_code=400, detail="Invalid theme")
-    
-    user.theme = appearance.theme
-    
+
+    current_user.theme = appearance.theme
     db.commit()
-    
+
     return {
         "message": "Appearance settings updated",
         "theme": appearance.theme
@@ -173,29 +219,24 @@ async def update_appearance(
 
 
 # UPDATE learning preferences
-@router.put("/{user_id}/learning")
+@router.put("/learning")
 async def update_learning_preferences(
-    user_id: int,
     learning: LearningPreferences,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update learning preferences"""
-    user = db.query(User).filter(User.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
     if learning.default_quiz_difficulty not in ["easy", "medium", "hard", "mixed"]:
         raise HTTPException(status_code=400, detail="Invalid difficulty")
-    
+
     if not 3 <= learning.questions_per_quiz <= 20:
         raise HTTPException(status_code=400, detail="Questions per quiz must be between 3 and 20")
-    
-    user.default_quiz_difficulty = learning.default_quiz_difficulty
-    user.questions_per_quiz = learning.questions_per_quiz
-    
+
+    current_user.default_quiz_difficulty = learning.default_quiz_difficulty
+    current_user.questions_per_quiz = learning.questions_per_quiz
+
     db.commit()
-    
+
     return {
         "message": "Learning preferences updated",
         "settings": learning.dict()
@@ -203,73 +244,50 @@ async def update_learning_preferences(
 
 
 # UPDATE all settings at once
-@router.put("/{user_id}")
+@router.put("")
 async def update_all_settings(
-    user_id: int,
     settings: UserSettings,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Update all user settings at once"""
-    user = db.query(User).filter(User.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Update profile
+    """Update all settings for the authenticated user at once"""
     if settings.profile.username:
-        user.username = settings.profile.username
+        current_user.username = settings.profile.username
     if settings.profile.email:
-        user.email = settings.profile.email
-    
-    # Update notifications
-    user.quiz_reminders = settings.notifications.quiz_reminders
-    user.progress_updates = settings.notifications.progress_updates
-    user.feature_announcements = settings.notifications.feature_announcements
-    
-    # Update appearance
-    user.theme = settings.appearance.theme
-    
-    # Update learning
-    user.default_quiz_difficulty = settings.learning.default_quiz_difficulty
-    user.questions_per_quiz = settings.learning.questions_per_quiz
-    
+        current_user.email = settings.profile.email
+
+    current_user.quiz_reminders = settings.notifications.quiz_reminders
+    current_user.progress_updates = settings.notifications.progress_updates
+    current_user.feature_announcements = settings.notifications.feature_announcements
+
+    current_user.theme = settings.appearance.theme
+
+    current_user.default_quiz_difficulty = settings.learning.default_quiz_difficulty
+    current_user.questions_per_quiz = settings.learning.questions_per_quiz
+
     db.commit()
-    db.refresh(user)
-    
+    db.refresh(current_user)
+
     return {
         "message": "All settings updated successfully",
-        "settings": {
-            "profile": {
-                "username": user.username,
-                "email": user.email
-            },
-            "notifications": settings.notifications.dict(),
-            "appearance": settings.appearance.dict(),
-            "learning": settings.learning.dict()
-        }
+        "settings": _settings_payload(current_user)
     }
 
 
 # RESET settings to defaults
-@router.post("/{user_id}/reset")
+@router.post("/reset")
 async def reset_settings(
-    user_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Reset all settings to defaults"""
-    user = db.query(User).filter(User.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Reset to defaults
-    user.quiz_reminders = True
-    user.progress_updates = True
-    user.feature_announcements = False
-    user.theme = "light"
-    user.default_quiz_difficulty = "mixed"
-    user.questions_per_quiz = 5
-    
+    """Reset all settings to defaults for the authenticated user"""
+    current_user.quiz_reminders = True
+    current_user.progress_updates = True
+    current_user.feature_announcements = False
+    current_user.theme = "light"
+    current_user.default_quiz_difficulty = "mixed"
+    current_user.questions_per_quiz = 5
+
     db.commit()
-    
+
     return {"message": "Settings reset to defaults"}

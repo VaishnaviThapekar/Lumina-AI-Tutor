@@ -146,32 +146,67 @@ export const getAllUsers = (): User[] => {
   return current ? [current] : [];
 };
 
-export const updateUserProfile = (
+export const updateUserProfile = async (
   userId: number,
   updates: Partial<User>
-): AuthResult => {
-  return {
-    success: false,
-    error: 'Profile editing isn\'t connected to the backend yet. (The backend has a /api/settings endpoint that could be wired up here.)',
-  };
+): Promise<AuthResult> => {
+  try {
+    const token = getToken();
+    const response = await axios.put(
+      `${API_BASE_URL}/api/settings/profile`,
+      { username: updates.username, email: updates.email },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    // Update the locally-cached user so the UI reflects the change immediately
+    const current = getCurrentUser();
+    const updated: User = {
+      ...(current as User),
+      username: response.data.username,
+      email: response.data.email,
+    };
+    localStorage.setItem(USER_KEY, JSON.stringify(updated));
+    return { success: true, user: updated };
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail;
+    return { success: false, error: detail || 'Failed to update profile' };
+  }
 };
 
-export const changePassword = (
+export const changePassword = async (
   userId: number,
   currentPassword: string,
   newPassword: string
-): AuthResult => {
-  return {
-    success: false,
-    error: 'Password change isn\'t connected to the backend yet. Use "Forgot password" from the login page instead.',
-  };
+): Promise<AuthResult> => {
+  try {
+    const token = getToken();
+    await axios.put(
+      `${API_BASE_URL}/api/settings/password`,
+      { current_password: currentPassword, new_password: newPassword },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return { success: true };
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail;
+    return { success: false, error: detail || 'Failed to change password' };
+  }
 };
 
-export const deleteAccount = (userId: number): AuthResult => {
-  return {
-    success: false,
-    error: 'Account deletion isn\'t connected to the backend yet.',
-  };
+export const deleteAccount = async (
+  userId: number,
+  password: string
+): Promise<AuthResult> => {
+  try {
+    const token = getToken();
+    await axios.delete(`${API_BASE_URL}/api/settings/account`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { password },
+    });
+    logout();
+    return { success: true };
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail;
+    return { success: false, error: detail || 'Failed to delete account' };
+  }
 };
 
 

@@ -105,7 +105,7 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.database import create_tables
+from app.database import create_tables, run_lightweight_migrations
 from app.routes import auth
 from app.api import upload, chat, quiz, flashcards
 from app.api import settings as settings_router
@@ -117,6 +117,7 @@ async def lifespan(app: FastAPI):
     # Startup
     print("🚀 Starting Lumina Adaptive AI Tutor System")
     create_tables()
+    run_lightweight_migrations()
     print("✅ Database tables created/verified")
     
     yield

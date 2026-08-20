@@ -48,7 +48,7 @@ export default function UserProfile() {
     setLoading(true);
     setMessage(null);
 
-    const result = updateUserProfile(user.id, profileForm);
+    const result = await updateUserProfile(user.id, profileForm);
 
     if (result.success && result.user) {
       setUser(result.user);
@@ -72,7 +72,7 @@ export default function UserProfile() {
     setLoading(true);
     setMessage(null);
 
-    const result = changePassword(user.id, passwordForm.currentPassword, passwordForm.newPassword);
+    const result = await changePassword(user.id, passwordForm.currentPassword, passwordForm.newPassword);
 
     if (result.success) {
       setMessage({ type: 'success', text: 'Password changed successfully!' });
@@ -88,7 +88,7 @@ export default function UserProfile() {
     setLoading(false);
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (!user) return;
 
     const confirmed = confirm(
@@ -97,11 +97,18 @@ export default function UserProfile() {
 
     if (!confirmed) return;
 
-    const doubleConfirm = confirm('This is your final warning. Delete account permanently?');
-    if (!doubleConfirm) return;
+    const password = prompt('Enter your password to confirm account deletion:');
+    if (!password) return;
 
-    deleteAccount(user.id);
-    router.push('/login');
+    setLoading(true);
+    const result = await deleteAccount(user.id, password);
+    setLoading(false);
+
+    if (result.success) {
+      router.push('/login');
+    } else {
+      setMessage({ type: 'error', text: result.error || 'Failed to delete account' });
+    }
   };
 
   const handleLogout = () => {

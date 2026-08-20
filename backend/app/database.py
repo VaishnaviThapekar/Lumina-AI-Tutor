@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -28,6 +28,18 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Notification preferences
+    quiz_reminders = Column(Boolean, default=True)
+    progress_updates = Column(Boolean, default=True)
+    feature_announcements = Column(Boolean, default=False)
+
+    # Appearance preferences
+    theme = Column(String, default="light")
+
+    # Learning preferences
+    default_quiz_difficulty = Column(String, default="mixed")
+    questions_per_quiz = Column(Integer, default=5)
     
     # Relationships
     sessions = relationship("LearningSession", back_populates="user")
@@ -133,3 +145,40 @@ def get_db():
 def create_tables():
     """Create all tables"""
     Base.metadata.create_all(bind=engine)
+
+
+def run_lightweight_migrations():
+    """
+    Add any newly-introduced columns to existing tables that already had
+    rows before the column existed. Base.metadata.create_all() only
+    creates missing TABLES, not missing COLUMNS on existing tables, so
+    this handles that gap without requiring a full Alembic setup.
+    Safe to run on every startup — each ALTER is skipped if the column
+    already exists.
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return  # create_tables() will have just created it fresh, fully up to date
+
+    existing_columns = {col["name"] for col in inspector.get_columns("users")}
+
+    # (column_name, SQL type, default) — keep in sync with the User model above
+    new_columns = [
+        ("quiz_reminders", "BOOLEAN", "TRUE"),
+        ("progress_updates", "BOOLEAN", "TRUE"),
+        ("feature_announcements", "BOOLEAN", "FALSE"),
+        ("theme", "VARCHAR", "'light'"),
+        ("default_quiz_difficulty", "VARCHAR", "'mixed'"),
+        ("questions_per_quiz", "INTEGER", "5"),
+    ]
+
+    with engine.connect() as conn:
+        for name, col_type, default in new_columns:
+            if name not in existing_columns:
+                conn.execute(text(
+                    f"ALTER TABLE users ADD COLUMN {name} {col_type} DEFAULT {default}"
+                ))
+                conn.commit()
+                print(f"[migration] Added missing column users.{name}")

@@ -15,6 +15,10 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Render's free tier can take 30-60s to wake a sleeping backend after
+  // inactivity — 90s gives that room without hanging forever on a genuine
+  // network failure.
+  timeout: 90000,
 });
 
 // Attach the JWT to every request if the user is logged in

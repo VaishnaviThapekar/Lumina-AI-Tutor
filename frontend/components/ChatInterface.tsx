@@ -268,6 +268,36 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
         }
     }, []);
 
+    // Load existing chat history whenever the session changes (e.g. when
+    // switching back to the Chat tab, or opening a different document).
+    // Without this, messages appeared to "vanish" on tab switch even
+    // though they were safely saved in the database all along.
+    useEffect(() => {
+        const loadHistory = async () => {
+            try {
+                const token = localStorage.getItem('lumina_token');
+                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                const response = await fetch(`${API_BASE_URL}/api/chat/history/${sessionId}`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                const loaded: Message[] = (data.messages || []).map((m: any) => ({
+                    role: m.role === 'user' ? 'user' : 'assistant',
+                    content: m.content,
+                    timestamp: new Date(m.timestamp),
+                }));
+                setMessages(loaded);
+            } catch (err) {
+                console.error('Error loading chat history:', err);
+            }
+        };
+
+        if (sessionId) {
+            loadHistory();
+        }
+    }, [sessionId]);
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };

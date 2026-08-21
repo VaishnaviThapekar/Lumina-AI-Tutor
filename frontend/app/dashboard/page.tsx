@@ -147,12 +147,20 @@ export default function Dashboard() {
     }, [router, sessionStatus]);
 
     // Load documents function with useCallback to prevent infinite loops
+    const [documentsLoading, setDocumentsLoading] = useState(true);
+    const [documentsError, setDocumentsError] = useState(false);
+
     const loadDocuments = useCallback(async () => {
+        setDocumentsLoading(true);
+        setDocumentsError(false);
         try {
             const response = await listDocuments();
             setDocuments(response.documents);
         } catch (error) {
             console.error('Error loading documents:', error);
+            setDocumentsError(true);
+        } finally {
+            setDocumentsLoading(false);
         }
     }, []);
 
@@ -330,7 +338,21 @@ export default function Dashboard() {
                                     Your Documents
                                 </h2>
                                 <div className="space-y-2">
-                                    {documents.length === 0 ? (
+                                    {documentsLoading ? (
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 px-3 py-2">
+                                            Loading your documents... (the server may take up to a minute to wake up if it's been idle)
+                                        </p>
+                                    ) : documentsError ? (
+                                        <div className="px-3 py-2">
+                                            <p className="text-sm text-red-500 mb-2">Couldn't load documents.</p>
+                                            <button
+                                                onClick={() => loadDocuments()}
+                                                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                                            >
+                                                Try again
+                                            </button>
+                                        </div>
+                                    ) : documents.length === 0 ? (
                                         <p className="text-sm text-gray-500 dark:text-gray-400 px-3 py-2">No documents yet</p>
                                     ) : (
                                         documents.map((doc) => (

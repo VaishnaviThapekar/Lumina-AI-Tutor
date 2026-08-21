@@ -84,6 +84,11 @@ async def generate_quiz(
     
     except Exception as e:
         db.rollback()
+        import traceback
+        print("=" * 80)
+        print("[QUIZ GENERATE ERROR]")
+        traceback.print_exc()
+        print("=" * 80)
         raise HTTPException(status_code=500, detail=f"Error generating quiz: {str(e)}")
 
 
@@ -192,6 +197,11 @@ async def submit_quiz(
         raise HTTPException(status_code=500, detail="Error parsing quiz data")
     except Exception as e:
         db.rollback()
+        import traceback
+        print("=" * 80)
+        print("[QUIZ SUBMIT ERROR]")
+        traceback.print_exc()
+        print("=" * 80)
         raise HTTPException(status_code=500, detail=f"Error submitting quiz: {str(e)}")
 
 

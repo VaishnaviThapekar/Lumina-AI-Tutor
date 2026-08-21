@@ -167,6 +167,16 @@ Start with [ and end with ]."""
         # Validate structure
         validated_questions = []
         for q in questions:
+            # Coerce correct_answer to int before validating — Gemini
+            # sometimes returns it as a JSON string ("0") instead of a
+            # number, which would otherwise cause _validate_question to
+            # silently drop the question.
+            if "correct_answer" in q:
+                try:
+                    q["correct_answer"] = int(q["correct_answer"])
+                except (ValueError, TypeError):
+                    pass  # leave as-is; _validate_question will reject it
+
             if self._validate_question(q):
                 validated_questions.append({
                     "question": q["question"],
@@ -174,7 +184,9 @@ Start with [ and end with ]."""
                     "correct_answer": int(q["correct_answer"]),
                     "explanation": q["explanation"]
                 })
-        
+            else:
+                print(f"[QuizGenerator] Dropped invalid question: {q}")
+
         return validated_questions
     
     def _validate_question(self, question: Dict) -> bool:

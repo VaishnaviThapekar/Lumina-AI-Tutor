@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Sparkles, Brain, Zap, Target, TrendingUp, Users, Award, ChevronRight, Play, Moon, Sun } from 'lucide-react';
+import { BookOpen, Sparkles, Brain, Zap, Target, TrendingUp, Users, Award, ChevronRight, Play, Moon, Sun, X } from 'lucide-react';
 
 export default function HomePage() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -149,12 +150,38 @@ export default function HomePage() {
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <button
+              onClick={() => setShowDemoModal(true)}
               className="px-8 py-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-white rounded-2xl font-bold border border-gray-200/50 dark:border-gray-700/50 transform hover:scale-105 transition-all flex items-center gap-2"
             >
               <Play className="w-5 h-5" />
               <span>Watch Demo</span>
             </button>
           </div>
+
+          {/* Demo Video Modal */}
+          {showDemoModal && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              onClick={() => setShowDemoModal(false)}
+            >
+              <div
+                className="relative w-full max-w-3xl bg-black rounded-2xl overflow-hidden shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setShowDemoModal(false)}
+                  className="absolute top-3 right-3 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                  aria-label="Close demo video"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <video controls autoPlay className="w-full aspect-video">
+                  <source src="/demo.mp4" type="video/mp4" />
+                  Your browser doesn&apos;t support embedded video.
+                </video>
+              </div>
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto pt-12">

@@ -89,8 +89,14 @@ export default function Dashboard() {
 
     const initUserSession = useCallback((user: any) => {
         let displayUser = { ...user };
-        if (session?.user?.name && session?.user?.email === user?.email) {
+        if (session?.user?.name) {
             displayUser.username = session.user.name;
+        }
+        if (session?.user?.email) {
+            displayUser.email = session.user.email;
+        }
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('lumina_user', JSON.stringify(displayUser));
         }
         setCurrentUser(displayUser);
         setAuthSyncing(false);
@@ -348,13 +354,15 @@ export default function Dashboard() {
                                 >
                                     <Settings className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                                 </button>
-                                {currentUser && (
+                                {(currentUser || session?.user) && (
                                     <button
                                         onClick={() => setProfileOpen(true)}
                                         className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg"
                                     >
                                         <User className="w-5 h-5" />
-                                        <span className="font-medium hidden sm:inline">{currentUser.username}</span>
+                                        <span className="font-medium hidden sm:inline">
+                                            {session?.user?.name || currentUser?.username || session?.user?.email || currentUser?.email || 'User'}
+                                        </span>
                                     </button>
                                 )}
                             </div>

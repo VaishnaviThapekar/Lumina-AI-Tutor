@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { User as UserIcon, Mail, Lock, Trash2, Save, X, AlertCircle, Check, LogOut, Shield, Bell, Palette } from 'lucide-react';
 import { getCurrentUser, updateUserProfile, changePassword, deleteAccount, logout, User } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
 export default function UserProfile() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'danger'>('profile');
   const [loading, setLoading] = useState(false);
@@ -27,19 +29,27 @@ export default function UserProfile() {
 
   useEffect(() => {
     const currentUser = getCurrentUser();
-    if (!currentUser) {
+    if (!currentUser && !session?.user) {
       router.push('/login');
       return;
     }
 
-    setUser(currentUser);
+    const effectiveUser: any = currentUser ? { ...currentUser } : { id: 1, email: session?.user?.email || '', username: session?.user?.name || '' };
+    if (session?.user?.name) {
+      effectiveUser.username = session.user.name;
+    }
+    if (session?.user?.email) {
+      effectiveUser.email = session.user.email;
+    }
+
+    setUser(effectiveUser as User);
     setProfileForm({
-      username: currentUser.username || '',
-      email: currentUser.email || '',
-      firstName: currentUser.firstName || '',
-      lastName: currentUser.lastName || '',
+      username: effectiveUser.username || '',
+      email: effectiveUser.email || '',
+      firstName: effectiveUser.firstName || '',
+      lastName: effectiveUser.lastName || '',
     });
-  }, [router]);
+  }, [router, session]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();

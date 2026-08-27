@@ -41,47 +41,38 @@ export default function Dashboard() {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [isClient, setIsClient] = useState(false);
 
+    // Auth-sync waiting state — shown while we're waiting for a slow/cold
+    // backend to confirm an OAuth sign-in (see the polling effect below).
+    const [authSyncing, setAuthSyncing] = useState(false);
+    const [authSyncFailed, setAuthSyncFailed] = useState(false);
+
     // XP System state
     const [showXPToast, setShowXPToast] = useState(false);
     const [xpMessage, setXPMessage] = useState('');
     const [xpAmount, setXPAmount] = useState(0);
 
-    // Safe date formatter - handles multiple date formats
     const formatDate = (dateString: string | undefined) => {
         if (!dateString) return 'Just now';
-
         try {
-            // Try to parse the date
             let date: Date;
-
-            // Check if it's a timestamp (number as string)
             if (/^\d+$/.test(dateString)) {
                 date = new Date(parseInt(dateString));
             } else {
-                // Try direct parsing (handles ISO, RFC formats, etc.)
                 date = new Date(dateString);
             }
-
-            // Validate the date
             if (isNaN(date.getTime())) {
                 console.log('Invalid date:', dateString);
                 return 'Just now';
             }
-
-            // Format the date nicely
             const now = new Date();
             const diffMs = now.getTime() - date.getTime();
             const diffMins = Math.floor(diffMs / 60000);
             const diffHours = Math.floor(diffMs / 3600000);
             const diffDays = Math.floor(diffMs / 86400000);
-
-            // Return relative time for recent dates
             if (diffMins < 1) return 'Just now';
             if (diffMins < 60) return `${diffMins} min ago`;
             if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
             if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-
-            // Return formatted date for older dates
             return date.toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -93,17 +84,15 @@ export default function Dashboard() {
         }
     };
 
-    // Check authentication - only on client
     const { data: session, status: sessionStatus } = useSession();
 
     const initUserSession = (user: any) => {
         setCurrentUser(user);
-
-        // Initialize XP system
+        setAuthSyncing(false);
+        setAuthSyncFailed(false);
         try {
             const lastLogin = localStorage.getItem(`last_login_${user.id}`);
             const today = new Date().toDateString();
-
             if (lastLogin !== today) {
                 localStorage.setItem(`last_login_${user.id}`, today);
                 showXPNotification(20, 'Daily login bonus!');
@@ -122,31 +111,46 @@ export default function Dashboard() {
             return;
         }
 
-        // No backend token yet. If we came in via Google/GitHub, NextAuth's
-        // session exists but our OAuthUserSync component needs a brief
-        // moment to exchange it for a real backend token — wait for that
-        // instead of immediately bouncing to /login.
         if (sessionStatus === 'loading') {
-            return; // effect re-runs once status settles
+            return;
         }
 
         if (sessionStatus === 'authenticated') {
-            const timer = setTimeout(() => {
+            // We have a NextAuth session (Google/GitHub sign-in succeeded)
+            // but no backend token yet — OAuthUserSync is exchanging it for
+            // one in the background. On a cold Render backend this can take
+            // 30-60+ seconds, so we poll patiently instead of giving up
+            // after a fixed short delay (which was the actual cause of
+            // "first login bounces back, second/third works" — the backend
+            // was simply still waking up).
+            setAuthSyncing(true);
+            setAuthSyncFailed(false);
+
+            const pollIntervalMs = 1000;
+            const maxWaitMs = 75000;
+            let elapsed = 0;
+
+            const interval = setInterval(() => {
                 const syncedUser = getCurrentUser();
                 if (syncedUser) {
+                    clearInterval(interval);
                     initUserSession(syncedUser);
-                } else {
-                    router.push('/login');
+                    return;
                 }
-            }, 1500);
-            return () => clearTimeout(timer);
+                elapsed += pollIntervalMs;
+                if (elapsed >= maxWaitMs) {
+                    clearInterval(interval);
+                    setAuthSyncing(false);
+                    setAuthSyncFailed(true);
+                }
+            }, pollIntervalMs);
+
+            return () => clearInterval(interval);
         }
 
-        // Not authenticated via NextAuth either — genuinely logged out
         router.push('/login');
     }, [router, sessionStatus]);
 
-    // Load documents function with useCallback to prevent infinite loops
     const [documentsLoading, setDocumentsLoading] = useState(true);
     const [documentsError, setDocumentsError] = useState(false);
 
@@ -164,7 +168,6 @@ export default function Dashboard() {
         }
     }, []);
 
-    // Load documents on mount
     useEffect(() => {
         loadDocuments();
     }, [loadDocuments]);
@@ -173,7 +176,6 @@ export default function Dashboard() {
         setXPAmount(xp);
         setXPMessage(message);
         setShowXPToast(true);
-
         setTimeout(() => {
             setShowXPToast(false);
         }, 3000);
@@ -181,11 +183,7 @@ export default function Dashboard() {
 
     const handleUploadSuccess = async (uploadResponse: UploadResponse) => {
         await loadDocuments();
-
-        // Award XP for upload
         showXPNotification(75, 'Document uploaded!');
-
-        // Auto-create session for new document
         try {
             const session = await createSession(uploadResponse.id);
             setCurrentSession(session);
@@ -217,7 +215,6 @@ export default function Dashboard() {
 
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this document?')) return;
-
         setDeletingId(id);
         try {
             await deleteDocument(id);
@@ -238,20 +235,56 @@ export default function Dashboard() {
         router.push('/login');
     };
 
+    const handleRetrySync = () => {
+        setAuthSyncFailed(false);
+        window.location.reload();
+    };
+
     if (!isClient) {
         return null;
     }
 
+    if (authSyncing) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Signing you in...</h2>
+                    <p className="text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
+                        The server may take up to a minute to wake up if it's been idle. Hang tight.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    if (authSyncFailed) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+                <div className="text-center max-w-sm mx-auto">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Sign-in is taking longer than expected</h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        This can happen if the server was asleep. Try again — it should be awake now.
+                    </p>
+                    <button
+                        onClick={handleRetrySync}
+                        className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-all shadow-lg"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            {/* Animated background orbs */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute w-[600px] h-[600px] bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
                 <div className="absolute w-[400px] h-[400px] bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl top-1/3 -right-32 animate-pulse" style={{ animationDelay: '1s' }}></div>
                 <div className="absolute w-[500px] h-[500px] bg-gradient-to-br from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl -bottom-48 left-1/3 animate-pulse" style={{ animationDelay: '2s' }}></div>
             </div>
 
-            {/* XP Toast Notification */}
             {showXPToast && (
                 <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
                     <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 min-w-[280px]">
@@ -266,7 +299,6 @@ export default function Dashboard() {
             )}
 
             <div className="relative">
-                {/* Header */}
                 <header className="sticky top-0 z-40 bg-white/70 dark:bg-gray-800/70 backdrop-blur-2xl border-b border-white/40 dark:border-gray-700/40 shadow-lg">
                     <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center justify-between h-16">
@@ -329,7 +361,6 @@ export default function Dashboard() {
                 </header>
 
                 <div className="flex max-w-[1800px] mx-auto">
-                    {/* Sidebar */}
                     <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                         } fixed lg:sticky top-16 left-0 z-30 w-64 h-[calc(100vh-4rem)] bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-r border-white/40 dark:border-gray-700/40 transition-transform duration-300 ease-in-out lg:translate-x-0 overflow-y-auto rounded-3xl m-4 shadow-2xl`}>
                         <div className="p-4">
@@ -403,10 +434,8 @@ export default function Dashboard() {
                         </div>
                     </aside>
 
-                    {/* Main Content */}
                     <main className="flex-1 p-4 lg:p-6">
                         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 dark:border-gray-700/40 overflow-hidden">
-                            {/* Tabs */}
                             <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
                                 <div className="flex min-w-max px-6">
                                     <button
@@ -554,13 +583,11 @@ export default function Dashboard() {
                                 </div>
                             </div>
 
-                            {/* Tab Content */}
                             <div className="min-h-[600px] p-6">
                                 {activeTab === 'upload' && (
                                     <UploadArea onUploadSuccess={handleUploadSuccess} />
                                 )}
 
-                                {/* ← UPDATED LEARN TAB WITH CHATINTERFACE */}
                                 {activeTab === 'chat' && (
                                     <div className="space-y-6">
                                         {currentSession ? (
@@ -684,18 +711,3 @@ export default function Dashboard() {
         </div>
     );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

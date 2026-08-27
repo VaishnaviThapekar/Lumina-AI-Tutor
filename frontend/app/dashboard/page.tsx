@@ -370,47 +370,77 @@ export default function Dashboard() {
                     </div>
                 </header>
 
-                <div className="flex max-w-[1800px] mx-auto">
-                    <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                        } fixed lg:sticky top-16 left-0 z-30 w-64 h-[calc(100vh-4rem)] bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-r border-white/40 dark:border-gray-700/40 transition-transform duration-300 ease-in-out lg:translate-x-0 overflow-y-auto rounded-3xl m-4 shadow-2xl`}>
-                        <div className="p-4">
-                            <div className="mb-6">
-                                <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-3">
-                                    Your Documents
-                                </h2>
+                <div className="flex max-w-[1800px] mx-auto relative">
+                    {/* Mobile Backdrop Overlay */}
+                    {sidebarOpen && (
+                        <div
+                            onClick={() => setSidebarOpen(false)}
+                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-20 lg:hidden"
+                        />
+                    )}
+
+                    <aside
+                        className={`${
+                            sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                        } fixed lg:sticky top-16 lg:top-16 left-0 z-30 w-72 sm:w-80 min-w-[280px] flex-shrink-0 h-[calc(100vh-4.5rem)] bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-white/50 dark:border-gray-700/50 transition-all duration-300 ease-in-out overflow-y-auto rounded-3xl m-2 sm:m-4 shadow-2xl`}
+                    >
+                        <div className="p-4 space-y-4">
+                            <div>
+                                <div className="flex items-center justify-between px-3 mb-3">
+                                    <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                        Your Documents
+                                    </h2>
+                                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300">
+                                        {documents.length}
+                                    </span>
+                                </div>
+
                                 <div className="space-y-2">
                                     {documentsLoading ? (
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 px-3 py-2">
-                                            Loading your documents... (the server may take up to a minute to wake up if it's been idle)
-                                        </p>
+                                        <div className="px-3 py-4 space-y-2 bg-purple-50/50 dark:bg-gray-900/40 rounded-xl border border-purple-100 dark:border-gray-800">
+                                            <div className="flex items-center gap-2 text-xs font-medium text-purple-700 dark:text-purple-300">
+                                                <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                                                <span>Loading your documents...</span>
+                                            </div>
+                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
+                                                The server may take a moment to wake up if idle.
+                                            </p>
+                                        </div>
                                     ) : documentsError ? (
-                                        <div className="px-3 py-2">
-                                            <p className="text-sm text-red-500 mb-2">Couldn't load documents.</p>
+                                        <div className="px-3 py-3 bg-rose-50 dark:bg-rose-900/20 rounded-xl border border-rose-200 dark:border-rose-800">
+                                            <p className="text-xs text-rose-600 dark:text-rose-400 mb-2 font-medium">Couldn't load documents.</p>
                                             <button
                                                 onClick={() => loadDocuments()}
-                                                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                                                className="text-xs bg-rose-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-rose-700 transition-colors shadow-sm"
                                             >
                                                 Try again
                                             </button>
                                         </div>
                                     ) : documents.length === 0 ? (
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 px-3 py-2">No documents yet</p>
+                                        <div className="px-3 py-4 text-center bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">No documents uploaded yet</p>
+                                            <p className="text-[11px] text-gray-400 mt-1">Upload a PDF or select a Quick-Start sample to begin.</p>
+                                        </div>
                                     ) : (
                                         documents.map((doc) => (
                                             <div
                                                 key={doc.id}
-                                                className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all ${currentSession?.document_id === doc.id
-                                                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
-                                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                                                    }`}
+                                                className={`group flex items-center justify-between px-3.5 py-3 rounded-xl cursor-pointer transition-all ${
+                                                    currentSession?.document_id === doc.id
+                                                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg scale-[1.02]'
+                                                        : 'bg-white/60 dark:bg-gray-900/40 hover:bg-purple-50 dark:hover:bg-gray-700/60 border border-gray-200/60 dark:border-gray-700/60 text-gray-700 dark:text-gray-300'
+                                                }`}
                                                 onClick={() => handleDocumentSelect(doc)}
                                             >
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium truncate">{doc.filename}</p>
-                                                    <p className={`text-xs truncate ${currentSession?.document_id === doc.id
-                                                        ? 'text-blue-100'
-                                                        : 'text-gray-500 dark:text-gray-400'
-                                                        }`}>
+                                                <div className="flex-1 min-w-0 pr-2">
+                                                    <p className="text-xs font-semibold truncate leading-snug">{doc.filename}</p>
+                                                    <p
+                                                        className={`text-[10px] mt-0.5 ${
+                                                            currentSession?.document_id === doc.id
+                                                                ? 'text-purple-200'
+                                                                : 'text-gray-400 dark:text-gray-500'
+                                                        }`}
+                                                    >
                                                         {formatDate(doc.uploaded_at)}
                                                     </p>
                                                 </div>
@@ -420,12 +450,14 @@ export default function Dashboard() {
                                                         handleDelete(doc.id);
                                                     }}
                                                     disabled={deletingId === doc.id}
-                                                    className={`ml-2 p-1 rounded-lg transition-colors ${currentSession?.document_id === doc.id
-                                                        ? 'hover:bg-white/20 text-white'
-                                                        : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-600 dark:hover:text-red-400'
-                                                        } ${deletingId === doc.id ? 'opacity-50' : 'opacity-0 group-hover:opacity-100'}`}
+                                                    className={`p-1.5 rounded-lg transition-all ${
+                                                        currentSession?.document_id === doc.id
+                                                            ? 'hover:bg-white/20 text-white'
+                                                            : 'hover:bg-rose-100 dark:hover:bg-rose-900/40 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400'
+                                                    } ${deletingId === doc.id ? 'opacity-50' : 'opacity-80 group-hover:opacity-100'}`}
+                                                    title="Delete document"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                    <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
                                         ))
@@ -434,7 +466,7 @@ export default function Dashboard() {
                             </div>
 
                             {currentSession && (
-                                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                <div className="border-t border-gray-200/80 dark:border-gray-700/80 pt-4">
                                     <MasteryProgress
                                         currentScore={currentSession.competency_score}
                                         previousScore={previousScore}
@@ -444,7 +476,7 @@ export default function Dashboard() {
                         </div>
                     </aside>
 
-                    <main className="flex-1 p-4 lg:p-6">
+                    <main className="flex-1 min-w-0 p-2 sm:p-4 lg:p-6">
                         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 dark:border-gray-700/40 overflow-hidden">
                             <div className="border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
                                 <div className="flex min-w-max px-6">

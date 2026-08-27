@@ -1,11 +1,13 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from typing import List, Dict, Tuple
+import logging
+
 from app.services.vector_store import VectorStoreService
 from app.services.adaptive_engine import AdaptiveEngine
 from app.config import settings
 
-settings = settings
+logger = logging.getLogger(__name__)
 
 
 class RAGService:
@@ -14,6 +16,7 @@ class RAGService:
     Combines vector search with LLM for context-aware responses
     """
     
+    def __init__(self):
         self.vector_store = VectorStoreService()
         self.adaptive_engine = AdaptiveEngine()
         self.llm = None

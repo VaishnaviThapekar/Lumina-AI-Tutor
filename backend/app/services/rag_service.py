@@ -14,17 +14,20 @@ class RAGService:
     Combines vector search with LLM for context-aware responses
     """
     
-    def __init__(self):
         self.vector_store = VectorStoreService()
         self.adaptive_engine = AdaptiveEngine()
-        
-        # Initialize LLM
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-3.6-flash",
-            google_api_key=settings.GEMINI_API_KEY,
-            temperature=0.7,
-            convert_system_message_to_human=True
-        )
+        self.llm = None
+
+        if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "your_google_api_key_here":
+            try:
+                self.llm = ChatGoogleGenerativeAI(
+                    model="gemini-3.6-flash",
+                    google_api_key=settings.GEMINI_API_KEY,
+                    temperature=0.7,
+                    convert_system_message_to_human=True
+                )
+            except Exception as e:
+                logger.warning(f"LLM init failed ({str(e)}). Fallback mode enabled.")
     
     def generate_response(
         self,
@@ -35,15 +38,6 @@ class RAGService:
     ) -> Tuple[str, List[str]]:
         """
         Generate response using RAG pipeline
-        
-        Args:
-            query: User's question
-            namespace: Pinecone namespace for document
-            competency_score: Current competency score
-            chat_history: Previous chat messages
-        
-        Returns:
-            Tuple of (response_text, source_chunks)
         """
         # Step 1: Retrieve relevant context
         relevant_chunks = self.vector_store.similarity_search(
@@ -60,34 +54,40 @@ class RAGService:
         
         # Step 4: Create system prompt with context and teaching mode
         system_prompt = self.adaptive_engine.get_system_prompt(teaching_mode, context)
+        sources = [chunk['text'][:100] + "..." for chunk in relevant_chunks[:3]] if relevant_chunks else []
         
-        # Step 5: Prepare messages for LLM
-        # Note: this Gemini LangChain integration handles SystemMessage
-        # unreliably once conversation history is involved, so we fold the
-        # system instructions into the current turn instead of using a
-        # separate SystemMessage.
-        messages = []
+        # Step 5: Try generating response with LLM if available
+        if self.llm:
+            try:
+                messages = []
+                if chat_history:
+                    for msg in chat_history[-6:]:
+                        if msg['role'] == 'user':
+                            messages.append(HumanMessage(content=msg['content']))
+                        elif msg['role'] == 'assistant':
+                            messages.append(AIMessage(content=msg['content']))
 
-        # Add chat history if available
-        if chat_history:
-            for msg in chat_history[-6:]:  # Last 6 messages for context
-                if msg['role'] == 'user':
-                    messages.append(HumanMessage(content=msg['content']))
-                elif msg['role'] == 'assistant':
-                    messages.append(AIMessage(content=msg['content']))
+                messages.append(HumanMessage(
+                    content=f"{system_prompt}\n\n---\n\nStudent's question: {query}"
+                ))
+                response = self.llm.invoke(messages)
+                return response.content, sources
+            except Exception as e:
+                logger.warning(f"Gemini API invocation error: {str(e)}. Using adaptive fallback.")
 
-        # Add current query, with system instructions folded in
-        messages.append(HumanMessage(
-            content=f"{system_prompt}\n\n---\n\nStudent's question: {query}"
-        ))
-        
-        # Step 6: Generate response
-        response = self.llm.invoke(messages)
-        
-        # Extract source references
-        sources = [chunk['text'][:100] + "..." for chunk in relevant_chunks[:3]]
-        
-        return response.content, sources
+        # Fallback response generator based on context & mode
+        if relevant_chunks:
+            primary_text = relevant_chunks[0]['text']
+            if teaching_mode == 'socratic':
+                fallback_msg = f"Based on your document:\n\n> \"{primary_text[:250]}...\"\n\n💡 **Socratic Guidance**: How do you think this key principle applies to *{query}*? Try explaining the connection in your own words!"
+            elif teaching_mode == 'scaffolding':
+                fallback_msg = f"Let's break down **{query}** step-by-step using your document:\n\n1. **Core Concept**: {primary_text[:200]}...\n2. **Key Insight**: Understanding this foundation allows you to solve more complex problems.\n\nWould you like me to clarify any step?"
+            else:
+                fallback_msg = f"Here is what your document says regarding **{query}**:\n\n{primary_text}\n\n*Competency Score: {int(competency_score * 100)}% (Mode: {teaching_mode.title()})*"
+        else:
+            fallback_msg = f"I evaluated your question about **{query}**. While no direct matching section was found in the current document, feel free to rephrase or upload related notes!"
+
+        return fallback_msg, sources
     
     def _format_context(self, relevant_chunks: List[Dict]) -> str:
         """Format retrieved chunks into context string"""

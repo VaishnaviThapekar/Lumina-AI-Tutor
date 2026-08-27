@@ -240,4 +240,25 @@ export const deleteFlashcard = async (flashcardId: number): Promise<void> => {
   await api.delete(`/api/flashcards/${flashcardId}`);
 };
 
+// Concept Map API
+export interface ConceptNode {
+  id: string;
+  label: string;
+  category: string;
+  mastery: number;
+  description: string;
+  connections: string[];
+}
+
+export interface ConceptMapData {
+  document_id: number;
+  title: string;
+  nodes: ConceptNode[];
+}
+
+export const getConceptMap = async (documentId: number): Promise<ConceptMapData> => {
+  const response = await api.get(`/api/concept-map/${documentId}`);
+  return response.data;
+};
+
 export default api;

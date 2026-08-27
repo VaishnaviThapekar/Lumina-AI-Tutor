@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { BookOpen, MessageSquare, ClipboardCheck, Settings, Menu, X, Trash2, BarChart3, Clock, FileText, Download, Users, User, TrendingUp, Brain, Trophy, Calendar, Home } from 'lucide-react';
+import { BookOpen, MessageSquare, ClipboardCheck, Settings, Menu, X, Trash2, BarChart3, Clock, FileText, Download, Users, User, TrendingUp, Brain, Trophy, Calendar, Home, Network } from 'lucide-react';
 import ChatWindow from '@/components/ChatWindow';
 import ChatInterface from '@/components/ChatInterface';
 import MasteryProgress from '@/components/MasteryProgress';
@@ -22,6 +22,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import GamificationDashboard from '@/components/GamificationDashboard';
 import VoiceControls from '@/components/VoiceControls';
 import AIStudyPlanner from '@/components/AIStudyPlanner';
+import ConceptMap from '@/components/ConceptMap';
 import { createSession, listDocuments, deleteDocument } from '@/lib/api';
 import type { Session, Document, UploadResponse } from '@/lib/types';
 import { getCurrentUser, logout } from '@/lib/auth';
@@ -31,7 +32,7 @@ export default function Dashboard() {
     const router = useRouter();
     const [currentSession, setCurrentSession] = useState<Session | null>(null);
     const [documents, setDocuments] = useState<Document[]>([]);
-    const [activeTab, setActiveTab] = useState<'chat' | 'quiz' | 'upload' | 'stats' | 'timer' | 'notes' | 'analytics' | 'social' | 'flashcards' | 'gamification' | 'planner'>('upload');
+    const [activeTab, setActiveTab] = useState<'chat' | 'quiz' | 'upload' | 'stats' | 'timer' | 'notes' | 'analytics' | 'social' | 'flashcards' | 'gamification' | 'planner' | 'concept-map'>('upload');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [previousScore, setPreviousScore] = useState<number | undefined>();
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -86,8 +87,12 @@ export default function Dashboard() {
 
     const { data: session, status: sessionStatus } = useSession();
 
-    const initUserSession = (user: any) => {
-        setCurrentUser(user);
+    const initUserSession = useCallback((user: any) => {
+        let displayUser = { ...user };
+        if (session?.user?.name && session?.user?.email === user?.email) {
+            displayUser.username = session.user.name;
+        }
+        setCurrentUser(displayUser);
         setAuthSyncing(false);
         setAuthSyncFailed(false);
         try {
@@ -100,7 +105,7 @@ export default function Dashboard() {
         } catch (error) {
             console.log('XP system initialization:', error);
         }
-    };
+    }, [session]);
 
     useEffect(() => {
         setIsClient(true);
@@ -108,7 +113,9 @@ export default function Dashboard() {
         const user = getCurrentUser();
         if (user) {
             initUserSession(user);
-            return;
+            if (sessionStatus !== 'authenticated') {
+                return;
+            }
         }
 
         if (sessionStatus === 'loading') {
@@ -116,13 +123,6 @@ export default function Dashboard() {
         }
 
         if (sessionStatus === 'authenticated') {
-            // We have a NextAuth session (Google/GitHub sign-in succeeded)
-            // but no backend token yet — OAuthUserSync is exchanging it for
-            // one in the background. On a cold Render backend this can take
-            // 30-60+ seconds, so we poll patiently instead of giving up
-            // after a fixed short delay (which was the actual cause of
-            // "first login bounces back, second/third works" — the backend
-            // was simply still waking up).
             setAuthSyncing(true);
             setAuthSyncFailed(false);
 
@@ -148,8 +148,10 @@ export default function Dashboard() {
             return () => clearInterval(interval);
         }
 
-        router.push('/login');
-    }, [router, sessionStatus]);
+        if (!user) {
+            router.push('/login');
+        }
+    }, [router, sessionStatus, session, initUserSession]);
 
     const [documentsLoading, setDocumentsLoading] = useState(true);
     const [documentsError, setDocumentsError] = useState(false);
@@ -580,6 +582,19 @@ export default function Dashboard() {
                                         </div>
                                         <span className="text-sm">Planner</span>
                                     </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('concept-map')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'concept-map'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                                            <Network className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Concept Map</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -656,6 +671,15 @@ export default function Dashboard() {
 
                                 {activeTab === 'planner' && (
                                     <AIStudyPlanner />
+                                )}
+
+                                {activeTab === 'concept-map' && (
+                                    <ConceptMap
+                                        documentId={currentSession?.document_id}
+                                        documentTitle={currentSession ? `Document #${currentSession.document_id}` : undefined}
+                                        onNavigateToQuiz={() => setActiveTab('quiz')}
+                                        onNavigateToFlashcards={() => setActiveTab('flashcards')}
+                                    />
                                 )}
                             </div>
                         </div>

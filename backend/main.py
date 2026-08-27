@@ -153,6 +153,7 @@ app.include_router(upload.router)
 app.include_router(chat.router)
 app.include_router(quiz.router)
 app.include_router(flashcards.router)
+app.include_router(concept_map.router)
 app.include_router(settings_router.router)
 
 

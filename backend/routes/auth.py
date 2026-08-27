@@ -6,7 +6,7 @@ import secrets
 import hashlib
 
 from app.database import get_db, User
-from app.schemas import UserCreate, UserLogin, UserResponse, TokenResponse
+from app.schemas import UserCreate, UserLogin, UserResponse, TokenResponse, OAuthLoginRequest
 from app.utils.security import hash_password, verify_password, create_access_token
 from app.dependencies import get_current_user
 
@@ -14,6 +14,44 @@ router = APIRouter()
 
 # Temporary storage for reset tokens (in production, use database / Redis)
 password_reset_tokens = {}
+
+
+@router.post("/api/auth/oauth-login", response_model=TokenResponse)
+async def oauth_login(request: OAuthLoginRequest, db: Session = Depends(get_db)):
+    """
+    Issue a real backend JWT for a user who just signed in via an OAuth
+    provider (Google/GitHub) through NextAuth. Updates user name to match
+    Google profile name accurately.
+    """
+    user = db.query(User).filter(User.email == request.email).first()
+    desired_username = request.name or request.email.split("@")[0]
+
+    if not user:
+        username = desired_username
+        base_username = username
+        counter = 1
+        while db.query(User).filter(User.username == username).first():
+            username = f"{base_username}{counter}"
+            counter += 1
+
+        user = User(
+            username=username,
+            email=request.email,
+            hashed_password=hash_password(secrets.token_urlsafe(32)),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        if request.name and user.username != request.name:
+            conflict = db.query(User).filter(User.username == request.name, User.id != user.id).first()
+            if not conflict:
+                user.username = request.name
+                db.commit()
+                db.refresh(user)
+
+    token = create_access_token(user.id, user.email)
+    return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
 
 
 @router.post("/api/auth/signup", response_model=TokenResponse)

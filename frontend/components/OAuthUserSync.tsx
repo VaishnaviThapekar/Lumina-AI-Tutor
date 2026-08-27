@@ -24,8 +24,9 @@ export default function OAuthUserSync() {
     if (syncing) return;
 
     const existingUser = getCurrentUser();
-    if (getToken() && existingUser?.email === session.user.email) {
-      return; // already have a real token for this exact account
+    const targetName = session.user.name || session.user.email.split('@')[0];
+    if (getToken() && existingUser?.email === session.user.email && existingUser?.username === targetName) {
+      return; // already have a real token for this exact account with matching username
     }
 
     setSyncing(true);

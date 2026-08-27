@@ -122,6 +122,22 @@ export default function FlashcardSystem() {
     }
   };
 
+  const handleExportAnkiCSV = () => {
+    if (flashcards.length === 0) {
+      alert('No flashcards available to export.');
+      return;
+    }
+    const csvContent = flashcards.map(c => `"${c.front.replace(/"/g, '""')}","${c.back.replace(/"/g, '""')}"`).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'lumina_flashcards_anki.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filteredCards = searchQuery
     ? flashcards.filter(c => 
         c.front.toLowerCase().includes(searchQuery.toLowerCase()) ||

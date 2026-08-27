@@ -21,18 +21,15 @@ password_reset_tokens = {}
 async def oauth_login(request: OAuthLoginRequest, db: Session = Depends(get_db)):
     """
     Issue a real backend JWT for a user who just signed in via an OAuth
-    provider (Google/GitHub) through NextAuth. NextAuth already verified
-    their identity with the provider, so no password check happens here —
-    we just find-or-create the matching User row and hand back a token,
-    the same shape as /api/auth/login.
+    provider (Google/GitHub) through NextAuth. Updates user name to match
+    Google profile name accurately.
     """
     user = db.query(User).filter(User.email == request.email).first()
+    desired_username = request.name or request.email.split("@")[0]
 
     if not user:
-        # New OAuth user: create an account with an unusable random password
-        # (they'll only ever sign in via OAuth, never with this password).
-        username = request.name or request.email.split("@")[0]
-        # Ensure username is unique by appending numbers if needed
+        # New OAuth user: create an account with a unique username
+        username = desired_username
         base_username = username
         counter = 1
         while db.query(User).filter(User.username == username).first():
@@ -47,6 +44,15 @@ async def oauth_login(request: OAuthLoginRequest, db: Session = Depends(get_db))
         db.add(user)
         db.commit()
         db.refresh(user)
+    else:
+        # Existing user logging in via OAuth: update username to match Google name if provided
+        if request.name and user.username != request.name:
+            # Check if name is taken by a DIFFERENT user id
+            conflict = db.query(User).filter(User.username == request.name, User.id != user.id).first()
+            if not conflict:
+                user.username = request.name
+                db.commit()
+                db.refresh(user)
 
     token = create_access_token(user.id, user.email)
     return TokenResponse(access_token=token, user=UserResponse.model_validate(user))

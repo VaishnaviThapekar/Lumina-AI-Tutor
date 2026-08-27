@@ -177,6 +177,42 @@ const UploadArea: React.FC<UploadAreaProps> = ({ onUploadSuccess }) => {
           )}
         </div>
       )}
+
+      {/* Quick Start Sample Documents */}
+      <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          ⚡ Or Quick-Start with Sample Study Material
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { title: 'Quantum Computing 101', icon: '⚡', desc: 'Qubits, superposition & entanglement' },
+            { title: 'Machine Learning Basics', icon: '🤖', desc: 'Neural nets, gradient descent & loss' },
+            { title: 'Cellular Biology', icon: '🧬', desc: 'DNA replication, ATP & mitochondria' },
+          ].map((sample, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                onUploadSuccess({
+                  id: 100 + idx,
+                  filename: `${sample.title}.pdf`,
+                  pinecone_namespace: `sample_${idx}`,
+                  uploaded_at: new Date().toISOString(),
+                  message: 'Sample study set loaded successfully'
+                });
+              }}
+              className="p-3 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/40 rounded-xl text-left hover:scale-[1.02] hover:shadow-md transition-all group"
+            >
+              <div className="text-xl mb-1">{sample.icon}</div>
+              <h4 className="font-semibold text-xs text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors">
+                {sample.title}
+              </h4>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
+                {sample.desc}
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

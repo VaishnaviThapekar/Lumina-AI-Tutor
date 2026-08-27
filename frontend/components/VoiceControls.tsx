@@ -590,18 +590,21 @@ export default function VoiceControls({ onTranscript, autoSend = false }: VoiceC
                 )}
             </div>
 
-            {/* Visual Feedback */}
+            {/* Visual Waveform Feedback */}
             {isListening && (
-                <div className="mt-4 flex items-center justify-center gap-2">
-                    <div className="flex gap-1">
-                        <div className="w-2 h-8 bg-purple-500 rounded-full animate-sound-wave"></div>
-                        <div className="w-2 h-12 bg-purple-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-6 bg-purple-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-10 bg-purple-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.3s' }}></div>
-                        <div className="w-2 h-8 bg-purple-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.4s' }}></div>
+                <div className="mt-4 flex flex-col items-center justify-center p-3 bg-purple-500/10 dark:bg-purple-900/20 rounded-xl border border-purple-300/30">
+                    <div className="flex items-center gap-1.5 h-10">
+                        <div className="w-1.5 h-4 bg-purple-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.0s' }}></div>
+                        <div className="w-1.5 h-8 bg-purple-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.15s' }}></div>
+                        <div className="w-1.5 h-10 bg-pink-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.3s' }}></div>
+                        <div className="w-1.5 h-6 bg-purple-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-1.5 h-9 bg-indigo-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.25s' }}></div>
+                        <div className="w-1.5 h-5 bg-purple-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.4s' }}></div>
+                        <div className="w-1.5 h-8 bg-pink-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.05s' }}></div>
+                        <div className="w-1.5 h-4 bg-purple-500 rounded-full animate-sound-wave" style={{ animationDelay: '0.2s' }}></div>
                     </div>
-                    <span className="text-sm text-purple-600 dark:text-purple-400 font-semibold ml-2">
-                        Listening...
+                    <span className="text-xs text-purple-700 dark:text-purple-300 font-medium mt-1">
+                        Active Listening • Speak clearly into your mic
                     </span>
                 </div>
             )}
@@ -609,16 +612,16 @@ export default function VoiceControls({ onTranscript, autoSend = false }: VoiceC
             <style jsx>{`
         @keyframes sound-wave {
           0%, 100% {
-            transform: scaleY(0.5);
-            opacity: 0.5;
+            transform: scaleY(0.4);
+            opacity: 0.4;
           }
           50% {
-            transform: scaleY(1);
+            transform: scaleY(1.2);
             opacity: 1;
           }
         }
         .animate-sound-wave {
-          animation: sound-wave 0.8s ease-in-out infinite;
+          animation: sound-wave 0.7s ease-in-out infinite;
         }
       `}</style>
         </div>

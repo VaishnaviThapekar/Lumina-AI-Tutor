@@ -19,6 +19,7 @@ pypdf==4.0.1
 python-dotenv==1.0.0
 pydantic==2.5.3
 pydantic-settings==2.1.0
+email-validator>=2.0.0
 httpx==0.26.0
 aiofiles==23.2.1
 

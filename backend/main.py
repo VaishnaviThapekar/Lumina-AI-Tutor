@@ -107,7 +107,7 @@ from contextlib import asynccontextmanager
 from app.config import settings
 from app.database import create_tables
 from app.routes import auth
-from app.api import upload, chat, quiz, flashcards
+from app.api import upload, chat, quiz, flashcards, concept_map
 from app.api import settings as settings_router
 
 

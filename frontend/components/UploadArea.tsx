@@ -79,138 +79,165 @@ const UploadArea: React.FC<UploadAreaProps> = ({ onUploadSuccess }) => {
   };
   
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">
-        Upload Learning Material
-      </h3>
-      
-      {!file ? (
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragging
-              ? 'border-primary-500 bg-primary-50'
-              : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
-          }`}
-        >
-          <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-700 mb-2">
-            <span className="font-semibold text-primary-600">Click to upload</span>
-            {' '}or drag and drop
-          </p>
-          <p className="text-sm text-gray-500">PDF files only (Max 10MB)</p>
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* File preview */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center gap-3">
-              <FileText className="w-8 h-8 text-primary-500" />
-              <div>
-                <p className="font-medium text-gray-800">{file.name}</p>
-                <p className="text-sm text-gray-500">
-                  {(file.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
+    <div className="space-y-6">
+      {/* Top Header Banner matching ConceptMap */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 p-6 text-white shadow-xl">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-purple-200 text-sm font-medium mb-1">
+              <Upload className="w-4 h-4 animate-bounce" />
+              <span>Document Intelligence Hub</span>
             </div>
-            
-            {uploadStatus === 'success' ? (
-              <CheckCircle className="w-6 h-6 text-success-500" />
-            ) : (
+            <h2 className="text-2xl md:text-3xl font-bold">
+              Upload Learning Material
+            </h2>
+            <p className="text-purple-100/80 text-sm mt-1 max-w-xl">
+              Import PDFs, lecture notes, or textbook chapters to generate RAG embeddings, AI quizzes, flashcards, and concept graphs.
+            </p>
+          </div>
+        </div>
+
+        {/* Decorative blur orb */}
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+      </div>
+
+      {/* Main Glassmorphism Upload Container */}
+      <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+        {!file ? (
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`relative border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 transform hover:-translate-y-0.5 ${
+              isDragging
+                ? 'border-purple-500 bg-purple-500/10 scale-[1.01]'
+                : 'border-purple-300/60 dark:border-purple-700/60 hover:border-purple-500 bg-white/40 dark:bg-gray-900/40 hover:bg-purple-50/40 dark:hover:bg-gray-800/40 shadow-sm'
+            }`}
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto mb-4 border border-purple-200 dark:border-purple-800 shadow-inner">
+              <Upload className="w-8 h-8" />
+            </div>
+
+            <p className="text-base text-gray-800 dark:text-gray-200 mb-1 font-semibold">
+              <span className="text-purple-600 dark:text-purple-400 underline decoration-purple-400 underline-offset-4">
+                Click to browse
+              </span>{' '}
+              or drag & drop your PDF file here
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">PDF documents up to 10MB supported</p>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* File preview */}
+            <div className="flex items-center justify-between p-4 bg-purple-50/50 dark:bg-gray-900/50 rounded-xl border border-purple-200/60 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500 text-white flex items-center justify-center font-bold">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-white text-sm">{file.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+
+              {uploadStatus === 'success' ? (
+                <CheckCircle className="w-6 h-6 text-emerald-500 animate-bounce" />
+              ) : (
+                <button
+                  onClick={handleRemoveFile}
+                  disabled={isUploading}
+                  className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              )}
+            </div>
+
+            {/* Upload button */}
+            {uploadStatus !== 'success' && (
               <button
-                onClick={handleRemoveFile}
+                onClick={handleUpload}
                 disabled={isUploading}
-                className="p-1 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
+                className="w-full py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Analyzing & Processing Document Chunks...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5" />
+                    Process & Index Document
+                  </>
+                )}
               </button>
             )}
-          </div>
-          
-          {/* Upload button */}
-          {uploadStatus !== 'success' && (
-            <button
-              onClick={handleUpload}
-              disabled={isUploading}
-              className="w-full py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Processing document...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-5 h-5" />
-                  Upload and Process
-                </>
-              )}
-            </button>
-          )}
-          
-          {/* Status messages */}
-          {uploadStatus === 'success' && (
-            <div className="p-4 bg-success-50 border border-success-200 rounded-lg">
-              <p className="text-success-700 font-medium">
-                ✅ Document uploaded and processed successfully!
-              </p>
-            </div>
-          )}
-          
-          {uploadStatus === 'error' && (
-            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg">
-              <p className="text-danger-700 font-medium">
-                ❌ Upload failed. Please try again.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Quick Start Sample Documents */}
-      <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          ⚡ Or Quick-Start with Sample Study Material
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { title: 'Quantum Computing 101', icon: '⚡', desc: 'Qubits, superposition & entanglement' },
-            { title: 'Machine Learning Basics', icon: '🤖', desc: 'Neural nets, gradient descent & loss' },
-            { title: 'Cellular Biology', icon: '🧬', desc: 'DNA replication, ATP & mitochondria' },
-          ].map((sample, idx) => (
-            <button
-              key={idx}
-              onClick={() => {
-                onUploadSuccess({
-                  id: 100 + idx,
-                  filename: `${sample.title}.pdf`,
-                  pinecone_namespace: `sample_${idx}`,
-                  uploaded_at: new Date().toISOString(),
-                  message: 'Sample study set loaded successfully'
-                });
-              }}
-              className="p-3 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-purple-900/20 border border-purple-200/50 dark:border-purple-800/40 rounded-xl text-left hover:scale-[1.02] hover:shadow-md transition-all group"
-            >
-              <div className="text-xl mb-1">{sample.icon}</div>
-              <h4 className="font-semibold text-xs text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors">
-                {sample.title}
-              </h4>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
-                {sample.desc}
-              </p>
-            </button>
-          ))}
+            {/* Status messages */}
+            {uploadStatus === 'success' && (
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+                <p className="text-emerald-700 dark:text-emerald-300 font-semibold text-sm">
+                  ✅ Document processed and vector indexed successfully! Redirecting to tutor...
+                </p>
+              </div>
+            )}
+
+            {uploadStatus === 'error' && (
+              <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
+                <p className="text-rose-700 dark:text-rose-300 font-semibold text-sm">
+                  ❌ Upload failed. Operating in local demo mode.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quick Start Sample Documents */}
+        <div className="mt-8 pt-6 border-t border-gray-200/60 dark:border-gray-700/60">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            ⚡ Quick-Start Sample Learning Sets
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { title: 'Quantum Computing 101', icon: '⚡', desc: 'Qubits, superposition & entanglement' },
+              { title: 'Machine Learning Basics', icon: '🤖', desc: 'Neural nets, gradient descent & loss' },
+              { title: 'Cellular Biology', icon: '🧬', desc: 'DNA replication, ATP & mitochondria' },
+            ].map((sample, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  onUploadSuccess({
+                    id: 100 + idx,
+                    filename: `${sample.title}.pdf`,
+                    pinecone_namespace: `sample_${idx}`,
+                    uploaded_at: new Date().toISOString(),
+                    message: 'Sample study set loaded successfully'
+                  });
+                }}
+                className="p-4 bg-white/80 dark:bg-gray-900/80 border border-gray-200/80 dark:border-gray-700/80 rounded-xl text-left hover:border-purple-400 hover:shadow-md hover:-translate-y-0.5 transition-all group"
+              >
+                <div className="text-2xl mb-1.5">{sample.icon}</div>
+                <h4 className="font-semibold text-sm text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  {sample.title}
+                </h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                  {sample.desc}
+                </p>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

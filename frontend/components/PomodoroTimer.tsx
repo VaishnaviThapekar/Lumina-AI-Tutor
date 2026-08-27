@@ -111,11 +111,31 @@ export default function PomodoroTimer() {
   const colors = getModeColor();
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Pomodoro Timer</h2>
-        <p className="text-gray-600 dark:text-gray-400">Stay focused and take regular breaks</p>
+    <div className="space-y-6">
+      {/* Top Header Banner matching ConceptMap */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 p-6 text-white shadow-xl">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-purple-200 text-sm font-medium mb-1">
+              <Clock className="w-4 h-4 animate-bounce" />
+              <span>Deep Work Productivity System</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold">Focus & Pomodoro Timer</h2>
+            <p className="text-purple-100/80 text-sm mt-1 max-w-xl">
+              Optimize cognitive retention with structured 25-minute deep focus sessions and restorative breaks.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-xl border border-white/30 text-xs font-bold">
+            <Brain className="w-4 h-4 text-purple-200" />
+            <span>Completed: {pomodorosCompleted} Sessions</span>
+          </div>
+        </div>
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
       </div>
+
+      {/* Main Glassmorphism Card */}
+      <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-8 shadow-sm max-w-2xl mx-auto">
 
       {/* Mode Selection */}
       <div className="flex justify-center gap-3 mb-8">
@@ -283,5 +303,6 @@ export default function PomodoroTimer() {
         </ul>
       </div>
     </div>
-  );
+  </div>
+);
 }

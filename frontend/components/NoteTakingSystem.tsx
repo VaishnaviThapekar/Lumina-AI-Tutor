@@ -145,19 +145,40 @@ export default function NoteTakingSystem() {
   };
 
   return (
-    <div className="h-full flex gap-6">
-      {/* Sidebar - Notes List */}
-      <div className="w-80 bg-white rounded-xl shadow-lg flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800">My Notes</h2>
-            <button
-              onClick={createNewNote}
-              className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+    <div className="space-y-6">
+      {/* Top Header Banner matching ConceptMap */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 p-6 text-white shadow-xl">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-purple-200 text-sm font-medium mb-1">
+              <FileText className="w-4 h-4 animate-bounce" />
+              <span>Smart Study Notes & Annotations</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold">Interactive Notebook</h2>
+            <p className="text-purple-100/80 text-sm mt-1 max-w-xl">
+              Organize lecture notes, document summaries, key definitions, and study tags in a unified workspace.
+            </p>
+          </div>
+
+          <button
+            onClick={createNewNote}
+            className="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Study Note</span>
+          </button>
+        </div>
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+      </div>
+
+      <div className="h-[600px] flex gap-6">
+        {/* Sidebar - Notes List */}
+        <div className="w-80 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="p-4 border-b border-gray-200/60 dark:border-gray-700/60">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">My Notes ({notes.length})</h3>
+            </div>
           </div>
 
           {/* Search */}

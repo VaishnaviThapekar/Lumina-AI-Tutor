@@ -146,15 +146,40 @@ export default function AIStudyPlanner() {
 
     return (
         <div className="space-y-6">
+            {/* Top Header Banner matching ConceptMap */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 p-6 text-white shadow-xl">
+                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-purple-200 text-sm font-medium mb-1">
+                            <Calendar className="w-4 h-4 animate-bounce" />
+                            <span>AI Adaptive Study Schedule</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold">Study Planner & Exam Timetable</h2>
+                        <p className="text-purple-100/80 text-sm mt-1 max-w-xl">
+                            Auto-schedule review sessions, set exam deadlines, and receive AI workload balance recommendations.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={() => setShowAddTask(true)}
+                        className="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-2"
+                    >
+                        <Brain className="w-4 h-4 text-purple-200" />
+                        <span>✨ Generate AI Schedule</span>
+                    </button>
+                </div>
+                <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+            </div>
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl p-6 text-white">
+                <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <Target className="w-8 h-8" />
-                        <span className="text-sm opacity-80">Today</span>
+                        <Target className="w-6 h-6 text-blue-500" />
+                        <span className="text-xs font-bold text-gray-500 uppercase">Today's Progress</span>
                     </div>
-                    <div className="text-4xl font-bold">{completedToday}/{todayTasks.length}</div>
-                    <div className="text-sm opacity-80 mt-1">Tasks completed</div>
+                    <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{completedToday}/{todayTasks.length}</div>
+                    <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-1">Tasks completed</div>
                 </div>
 
                 <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-6 text-white">

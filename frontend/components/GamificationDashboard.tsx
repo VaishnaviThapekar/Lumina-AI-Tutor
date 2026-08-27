@@ -264,20 +264,42 @@ export default function GamificationDashboard() {
 
     return (
         <div className="space-y-6">
+            {/* Top Header Banner matching ConceptMap */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 p-6 text-white shadow-xl">
+                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-purple-200 text-sm font-medium mb-1">
+                            <Trophy className="w-4 h-4 text-yellow-300 animate-bounce" />
+                            <span>Level {progress.level} Scholar Achievements</span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold">Rewards & Gamification</h2>
+                        <p className="text-purple-100/80 text-sm mt-1 max-w-xl">
+                            Earn XP bonuses, maintain daily study streaks, unlock badges, and compete on the global leaderboard.
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-white/20 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/30 text-xs font-bold">
+                        <Flame className="w-5 h-5 text-orange-300 animate-pulse" />
+                        <span>{progress.dailyStreak} Day Study Streak 🔥</span>
+                    </div>
+                </div>
+                <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+            </div>
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Level Card */}
-                <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-6 text-white">
+                <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <Crown className="w-8 h-8" />
-                        <span className="text-sm opacity-80">Level</span>
+                        <Crown className="w-6 h-6 text-amber-500" />
+                        <span className="text-xs font-bold text-gray-500 uppercase">Scholar Rank</span>
                     </div>
-                    <div className="text-4xl font-bold">{progress.level}</div>
-                    <div className="text-sm opacity-80 mt-1">{xpNeeded} XP to next</div>
+                    <div className="text-3xl font-extrabold text-gray-900 dark:text-white">Level {progress.level}</div>
+                    <div className="text-xs text-purple-600 dark:text-purple-400 font-semibold mt-1">{xpNeeded} XP to next level</div>
                 </div>
 
                 {/* Total XP Card */}
-                <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl p-6 text-white">
+                <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                         <Zap className="w-8 h-8" />
                         <span className="text-sm opacity-80">Total XP</span>

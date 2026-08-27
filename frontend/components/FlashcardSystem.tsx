@@ -149,92 +149,88 @@ export default function FlashcardSystem() {
 
   return (
     <div className="space-y-6">
-      {/* Header Stats */}
+      {/* Top Header Banner matching ConceptMap */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 p-6 text-white shadow-xl">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-purple-200 text-sm font-medium mb-1">
+              <Brain className="w-4 h-4 animate-bounce" />
+              <span>Spaced Repetition & Memory System</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold">Smart Flashcards Engine</h2>
+            <p className="text-purple-100/80 text-sm mt-1 max-w-xl">
+              Master complex topics through SuperMemo-2 spaced repetition algorithms, AI document auto-generation, and Anki CSV export.
+            </p>
+          </div>
+
+          <button
+            onClick={handleExportAnkiCSV}
+            className="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-2"
+          >
+            <span>📥 Export Anki CSV</span>
+          </button>
+        </div>
+        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+      </div>
+
+      {/* Header Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
-          <div className="flex items-center gap-2 mb-2">
-            <Brain className="w-5 h-5" />
-            <span className="text-sm opacity-90">Total Cards</span>
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
+            <Brain className="w-4 h-4" />
+            <span className="text-xs font-bold text-gray-500 uppercase">Total Cards</span>
           </div>
-          <div className="text-3xl font-bold">{stats.totalCards}</div>
+          <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.totalCards}</div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-5 h-5" />
-            <span className="text-sm opacity-90">Due Today</span>
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-orange-500 mb-1">
+            <Clock className="w-4 h-4" />
+            <span className="text-xs font-bold text-gray-500 uppercase">Due Today</span>
           </div>
-          <div className="text-3xl font-bold">{stats.cardsDue}</div>
+          <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.cardsDue}</div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-5 h-5" />
-            <span className="text-sm opacity-90">Success Rate</span>
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-emerald-500 mb-1">
+            <TrendingUp className="w-4 h-4" />
+            <span className="text-xs font-bold text-gray-500 uppercase">Retention Rate</span>
           </div>
-          <div className="text-3xl font-bold">{stats.successRate}%</div>
+          <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.successRate}%</div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
-          <div className="flex items-center gap-2 mb-2">
-            <Award className="w-5 h-5" />
-            <span className="text-sm opacity-90">Reviewed</span>
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-indigo-500 mb-1">
+            <Award className="w-4 h-4" />
+            <span className="text-xs font-bold text-gray-500 uppercase">Reviewed</span>
           </div>
-          <div className="text-3xl font-bold">{stats.cardsReviewed}</div>
+          <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.cardsReviewed}</div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="bg-white rounded-xl shadow-lg">
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('study')}
-            className={`flex-1 py-4 px-6 font-medium transition-colors ${
-              activeTab === 'study'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <Play className="w-5 h-5 inline mr-2" />
-            Study
-          </button>
-
-          <button
-            onClick={() => setActiveTab('create')}
-            className={`flex-1 py-4 px-6 font-medium transition-colors ${
-              activeTab === 'create'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <Plus className="w-5 h-5 inline mr-2" />
-            Create
-          </button>
-
-          <button
-            onClick={() => setActiveTab('browse')}
-            className={`flex-1 py-4 px-6 font-medium transition-colors ${
-              activeTab === 'browse'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <BookOpen className="w-5 h-5 inline mr-2" />
-            Browse
-          </button>
-
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`flex-1 py-4 px-6 font-medium transition-colors ${
-              activeTab === 'stats'
-                ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <TrendingUp className="w-5 h-5 inline mr-2" />
-            Stats
-          </button>
+      {/* Main Content Card */}
+      <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl shadow-sm overflow-hidden">
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-gray-200/60 dark:border-gray-700/60 overflow-x-auto">
+          {[
+            { key: 'study', label: 'Study Deck', icon: Play },
+            { key: 'create', label: 'Create / AI Gen', icon: Plus },
+            { key: 'browse', label: 'Browse Cards', icon: BookOpen },
+            { key: 'stats', label: 'Analytics', icon: TrendingUp },
+          ].map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key as any)}
+              className={`flex-1 py-3.5 px-5 text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                activeTab === key
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-700/50'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
 
         {/* Tab Content */}

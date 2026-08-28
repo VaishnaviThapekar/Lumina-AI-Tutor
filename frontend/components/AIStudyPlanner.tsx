@@ -182,31 +182,31 @@ export default function AIStudyPlanner() {
                     <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-1">Tasks completed</div>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-6 text-white">
+                <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <Clock className="w-8 h-8" />
-                        <span className="text-sm opacity-80">Study Time</span>
+                        <Clock className="w-6 h-6 text-purple-500" />
+                        <span className="text-xs font-bold text-gray-500 uppercase">Study Time</span>
                     </div>
-                    <div className="text-4xl font-bold">{Math.floor(totalStudyTime / 60)}h</div>
-                    <div className="text-sm opacity-80 mt-1">{totalStudyTime % 60}m total</div>
+                    <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{Math.floor(totalStudyTime / 60)}h {totalStudyTime % 60}m</div>
+                    <div className="text-xs text-purple-600 dark:text-purple-400 font-semibold mt-1">Total Time Spent</div>
                 </div>
 
-                <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-6 text-white">
+                <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <AlertCircle className="w-8 h-8" />
-                        <span className="text-sm opacity-80">Upcoming</span>
+                        <AlertCircle className="w-6 h-6 text-amber-500" />
+                        <span className="text-xs font-bold text-gray-500 uppercase">Upcoming Exams</span>
                     </div>
-                    <div className="text-4xl font-bold">{upcomingExams.length}</div>
-                    <div className="text-sm opacity-80 mt-1">Exams scheduled</div>
+                    <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{upcomingExams.length} Exams</div>
+                    <div className="text-xs text-amber-600 dark:text-amber-400 font-semibold mt-1">Deadlines Set</div>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl p-6 text-white">
+                <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <TrendingUp className="w-8 h-8" />
-                        <span className="text-sm opacity-80">Progress</span>
+                        <TrendingUp className="w-6 h-6 text-emerald-500" />
+                        <span className="text-xs font-bold text-gray-500 uppercase">Overall Completion</span>
                     </div>
-                    <div className="text-4xl font-bold">{Math.round((tasks.filter(t => t.completed).length / Math.max(tasks.length, 1)) * 100)}%</div>
-                    <div className="text-sm opacity-80 mt-1">Overall completion</div>
+                    <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{Math.round((tasks.filter(t => t.completed).length / Math.max(tasks.length, 1)) * 100)}%</div>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Completion Rate</div>
                 </div>
             </div>
 

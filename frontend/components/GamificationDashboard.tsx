@@ -301,31 +301,31 @@ export default function GamificationDashboard() {
                 {/* Total XP Card */}
                 <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <Zap className="w-8 h-8" />
-                        <span className="text-sm opacity-80">Total XP</span>
+                        <Zap className="w-6 h-6 text-indigo-500" />
+                        <span className="text-xs font-bold text-gray-500 uppercase">Total XP</span>
                     </div>
-                    <div className="text-4xl font-bold">{progress.xp.toLocaleString()}</div>
-                    <div className="text-sm opacity-80 mt-1">Experience Points</div>
+                    <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{progress.xp.toLocaleString()}</div>
+                    <div className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mt-1">Experience Points</div>
                 </div>
 
                 {/* Streak Card */}
-                <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-6 text-white">
+                <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <Flame className="w-8 h-8" />
-                        <span className="text-sm opacity-80">Streak</span>
+                        <Flame className="w-6 h-6 text-orange-500" />
+                        <span className="text-xs font-bold text-gray-500 uppercase">Study Streak</span>
                     </div>
-                    <div className="text-4xl font-bold">{progress.dailyStreak}</div>
-                    <div className="text-sm opacity-80 mt-1">Days in a row</div>
+                    <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{progress.dailyStreak} Days</div>
+                    <div className="text-xs text-orange-600 dark:text-orange-400 font-semibold mt-1">Consecutive Days</div>
                 </div>
 
                 {/* Achievements Card */}
-                <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl p-6 text-white">
+                <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <Trophy className="w-8 h-8" />
-                        <span className="text-sm opacity-80">Achievements</span>
+                        <Trophy className="w-6 h-6 text-emerald-500" />
+                        <span className="text-xs font-bold text-gray-500 uppercase">Badges Unlocked</span>
                     </div>
-                    <div className="text-4xl font-bold">{unlockedAchievements.length}/{ACHIEVEMENTS.length}</div>
-                    <div className="text-sm opacity-80 mt-1">Unlocked</div>
+                    <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{unlockedAchievements.length}/{ACHIEVEMENTS.length}</div>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Badges Earned</div>
                 </div>
             </div>
 

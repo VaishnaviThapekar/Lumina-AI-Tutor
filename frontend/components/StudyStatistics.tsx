@@ -107,45 +107,47 @@ export default function StudyStatistics() {
         </div>
 
         {/* Documents Read */}
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <BookOpen className="w-8 h-8 opacity-80" />
-            <span className="text-sm opacity-80">Documents</span>
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 dark:bg-indigo-900/40 px-2 py-0.5 rounded-full">
+              Reading
+            </span>
           </div>
-          <div className="text-3xl font-bold mb-1">
-            {stats.documentsRead}
-          </div>
-          <div className="text-sm opacity-80">
-            Documents completed
-          </div>
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Documents Analyzed</div>
+          <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.documentsRead} Docs</div>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">Active documents in tutor</p>
         </div>
 
         {/* Current Streak */}
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <Zap className="w-8 h-8 opacity-80" />
-            <span className="text-sm opacity-80">Streak</span>
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold">
+              <Zap className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold text-orange-600 bg-orange-100 dark:bg-orange-900/40 px-2 py-0.5 rounded-full">
+              Streak
+            </span>
           </div>
-          <div className="text-3xl font-bold mb-1">
-            {stats.currentStreak} 🔥
-          </div>
-          <div className="text-sm opacity-80">
-            Days in a row
-          </div>
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Daily Study Streak</div>
+          <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.currentStreak} Days 🔥</div>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">Consecutive active study days</p>
         </div>
 
         {/* Average Score */}
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <Award className="w-8 h-8 opacity-80" />
-            <span className="text-sm opacity-80">Performance</span>
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              <Award className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
+              Quizzes
+            </span>
           </div>
-          <div className="text-3xl font-bold mb-1">
-            {stats.averageScore}%
-          </div>
-          <div className="text-sm opacity-80">
-            Average quiz score
-          </div>
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Quiz Score Average</div>
+          <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.averageScore}%</div>
         </div>
       </div>
 

@@ -268,11 +268,20 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
         }
     }, []);
 
-    // Load existing chat history whenever the session changes (e.g. when
-    // switching back to the Chat tab, or opening a different document).
-    // Without this, messages appeared to "vanish" on tab switch even
-    // though they were safely saved in the database all along.
+    // Load existing chat history from localStorage cache immediately, then sync with API.
     useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const cacheKey = `lumina_chat_history_${sessionId || 'default'}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setMessages(parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
+                }
+            } catch (e) {}
+        }
+
         const loadHistory = async () => {
             try {
                 const token = localStorage.getItem('lumina_token');
@@ -282,12 +291,15 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                 });
                 if (!response.ok) return;
                 const data = await response.json();
-                const loaded: Message[] = (data.messages || []).map((m: any) => ({
-                    role: m.role === 'user' ? 'user' : 'assistant',
-                    content: m.content,
-                    timestamp: new Date(m.timestamp),
-                }));
-                setMessages(loaded);
+                if (data.messages && data.messages.length > 0) {
+                    const loaded: Message[] = data.messages.map((m: any) => ({
+                        role: m.role === 'user' ? 'user' : 'assistant',
+                        content: m.content,
+                        timestamp: new Date(m.timestamp),
+                    }));
+                    setMessages(loaded);
+                    localStorage.setItem(cacheKey, JSON.stringify(loaded));
+                }
             } catch (err) {
                 console.error('Error loading chat history:', err);
             }
@@ -297,6 +309,14 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
             loadHistory();
         }
     }, [sessionId]);
+
+    // Automatically persist messages to localStorage whenever messages update
+    useEffect(() => {
+        if (typeof window !== 'undefined' && messages.length > 0) {
+            const cacheKey = `lumina_chat_history_${sessionId || 'default'}`;
+            localStorage.setItem(cacheKey, JSON.stringify(messages));
+        }
+    }, [messages, sessionId]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

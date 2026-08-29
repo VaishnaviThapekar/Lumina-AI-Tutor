@@ -55,22 +55,25 @@ export default function Dashboard() {
     const formatDate = (dateString: string | undefined) => {
         if (!dateString) return 'Just now';
         try {
+            let str = String(dateString).trim();
+            if (str.includes('T') && !str.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(str)) {
+                str += 'Z';
+            }
             let date: Date;
-            if (/^\d+$/.test(dateString)) {
-                date = new Date(parseInt(dateString));
+            if (/^\d+$/.test(str)) {
+                date = new Date(parseInt(str));
             } else {
-                date = new Date(dateString);
+                date = new Date(str);
             }
             if (isNaN(date.getTime())) {
-                console.log('Invalid date:', dateString);
                 return 'Just now';
             }
             const now = new Date();
             const diffMs = now.getTime() - date.getTime();
+            if (diffMs < 60000) return 'Just now';
             const diffMins = Math.floor(diffMs / 60000);
             const diffHours = Math.floor(diffMs / 3600000);
             const diffDays = Math.floor(diffMs / 86400000);
-            if (diffMins < 1) return 'Just now';
             if (diffMins < 60) return `${diffMins} min ago`;
             if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
             if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
@@ -80,7 +83,6 @@ export default function Dashboard() {
                 year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
             });
         } catch (error) {
-            console.log('Date parsing error:', error, dateString);
             return 'Just now';
         }
     };
@@ -639,11 +641,11 @@ export default function Dashboard() {
                             </div>
 
                             <div className="min-h-[600px] p-6">
-                                {activeTab === 'upload' && (
+                                <div className={activeTab === 'upload' ? 'block' : 'hidden'}>
                                     <UploadArea onUploadSuccess={handleUploadSuccess} />
-                                )}
+                                </div>
 
-                                {activeTab === 'chat' && (
+                                <div className={activeTab === 'chat' ? 'block' : 'hidden'}>
                                     <div className="space-y-6">
                                         {currentSession ? (
                                             <ChatInterface sessionId={currentSession.id} />
@@ -667,60 +669,66 @@ export default function Dashboard() {
                                             </div>
                                         )}
                                     </div>
-                                )}
+                                </div>
 
-                                {activeTab === 'quiz' && currentSession && (
-                                    <QuizModule
-                                        sessionId={currentSession.id}
-                                        documentId={currentSession.document_id}
-                                        competencyScore={currentSession.competency_score}
-                                        onCompetencyUpdate={(newScore: number) => {
-                                            setCurrentSession({ ...currentSession, competency_score: newScore });
-                                        }}
-                                        onClose={() => setActiveTab('chat')}
-                                    />
-                                )}
+                                <div className={activeTab === 'quiz' ? 'block' : 'hidden'}>
+                                    {currentSession ? (
+                                        <QuizModule
+                                            sessionId={currentSession.id}
+                                            documentId={currentSession.document_id}
+                                            competencyScore={currentSession.competency_score}
+                                            onCompetencyUpdate={(newScore: number) => {
+                                                setCurrentSession({ ...currentSession, competency_score: newScore });
+                                            }}
+                                            onClose={() => setActiveTab('chat')}
+                                        />
+                                    ) : (
+                                        <div className="text-center py-12">
+                                            <p className="text-gray-600 dark:text-gray-400">Please select a document from the left sidebar to generate a quiz.</p>
+                                        </div>
+                                    )}
+                                </div>
 
-                                {activeTab === 'stats' && (
+                                <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
                                     <StudyStatistics />
-                                )}
+                                </div>
 
-                                {activeTab === 'analytics' && (
+                                <div className={activeTab === 'analytics' ? 'block' : 'hidden'}>
                                     <AdvancedAnalytics />
-                                )}
+                                </div>
 
-                                {activeTab === 'timer' && (
+                                <div className={activeTab === 'timer' ? 'block' : 'hidden'}>
                                     <PomodoroTimer />
-                                )}
+                                </div>
 
-                                {activeTab === 'notes' && (
+                                <div className={activeTab === 'notes' ? 'block' : 'hidden'}>
                                     <NoteTakingSystem />
-                                )}
+                                </div>
 
-                                {activeTab === 'social' && (
+                                <div className={activeTab === 'social' ? 'block' : 'hidden'}>
                                     <SocialHub />
-                                )}
+                                </div>
 
-                                {activeTab === 'flashcards' && (
+                                <div className={activeTab === 'flashcards' ? 'block' : 'hidden'}>
                                     <FlashcardSystem />
-                                )}
+                                </div>
 
-                                {activeTab === 'gamification' && (
+                                <div className={activeTab === 'gamification' ? 'block' : 'hidden'}>
                                     <GamificationDashboard />
-                                )}
+                                </div>
 
-                                {activeTab === 'planner' && (
+                                <div className={activeTab === 'planner' ? 'block' : 'hidden'}>
                                     <AIStudyPlanner />
-                                )}
+                                </div>
 
-                                {activeTab === 'concept-map' && (
+                                <div className={activeTab === 'concept-map' ? 'block' : 'hidden'}>
                                     <ConceptMap
                                         documentId={currentSession?.document_id}
                                         documentTitle={currentSession ? `Document #${currentSession.document_id}` : undefined}
                                         onNavigateToQuiz={() => setActiveTab('quiz')}
                                         onNavigateToFlashcards={() => setActiveTab('flashcards')}
                                     />
-                                )}
+                                </div>
                             </div>
                         </div>
                     </main>

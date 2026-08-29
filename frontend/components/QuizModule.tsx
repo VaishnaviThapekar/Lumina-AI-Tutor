@@ -25,6 +25,30 @@ const QuizModule: React.FC<QuizModuleProps> = ({
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [result, setResult] = useState<QuizResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Restore active quiz state from localStorage on mount/document switch
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !documentId) return;
+    const cacheKey = `lumina_quiz_state_${documentId}`;
+    const saved = localStorage.getItem(cacheKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.quiz) setQuiz(parsed.quiz);
+        if (parsed.currentQuestion !== undefined) setCurrentQuestion(parsed.currentQuestion);
+        if (parsed.selectedAnswers) setSelectedAnswers(parsed.selectedAnswers);
+        if (parsed.result) setResult(parsed.result);
+      } catch (e) {}
+    }
+  }, [documentId]);
+
+  // Persist active quiz state to localStorage whenever state changes
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && documentId && quiz) {
+      const cacheKey = `lumina_quiz_state_${documentId}`;
+      localStorage.setItem(cacheKey, JSON.stringify({ quiz, currentQuestion, selectedAnswers, result }));
+    }
+  }, [quiz, currentQuestion, selectedAnswers, result, documentId]);
   
   const handleGenerateQuiz = async (numQuestions: number) => {
     setIsLoading(true);

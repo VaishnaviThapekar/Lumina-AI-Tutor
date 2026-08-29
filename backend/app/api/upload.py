@@ -154,7 +154,7 @@ async def list_documents(
             {
                 "id": doc.id,
                 "filename": doc.filename,
-                "uploaded_at": doc.uploaded_at,
+                "uploaded_at": (doc.uploaded_at.isoformat() + "Z") if doc.uploaded_at else (datetime.utcnow().isoformat() + "Z"),
                 "namespace": doc.pinecone_namespace
             }
             for doc in documents

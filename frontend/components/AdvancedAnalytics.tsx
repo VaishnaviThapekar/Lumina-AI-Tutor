@@ -34,9 +34,10 @@ export default function AdvancedAnalytics() {
 
   const loadWeeklyData = () => {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const breakdown = stats.weeklyBreakdown || { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
     const data: WeeklyData[] = days.map(day => ({
       day,
-      minutes: Math.floor(Math.random() * 120) + 30
+      minutes: breakdown[day] || 0
     }));
     setWeeklyData(data);
   };
@@ -58,11 +59,11 @@ export default function AdvancedAnalytics() {
 
   const studyDistribution: ChartData[] = [
     { label: 'Focus Sessions', value: stats.sessionsCompleted, color: '#a855f7' },
-    { label: 'Documents Read', value: stats.documentsRead * 3, color: '#6366f1' },
-    { label: 'Quizzes Taken', value: stats.quizzesCompleted * 2, color: '#ec4899' },
+    { label: 'Documents Read', value: stats.documentsRead, color: '#6366f1' },
+    { label: 'Quizzes Taken', value: stats.quizzesCompleted, color: '#ec4899' },
   ];
 
-  const maxValue = Math.max(...weeklyData.map(d => d.minutes));
+  const maxValue = Math.max(...weeklyData.map(d => d.minutes), 1);
 
   return (
     <div className="space-y-6">

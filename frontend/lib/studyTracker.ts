@@ -13,6 +13,7 @@ export interface StudyStats {
   quizzesCompleted: number;
   averageScore: number;
   lastStudyDate: string;
+  weeklyBreakdown?: Record<string, number>;
 }
 
 const STORAGE_KEY = 'studyStats';
@@ -30,6 +31,7 @@ const defaultStats: StudyStats = {
   quizzesCompleted: 0,
   averageScore: 0,
   lastStudyDate: '',
+  weeklyBreakdown: { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 },
 };
 
 // Get current stats from localStorage
@@ -38,7 +40,11 @@ export const getStats = (): StudyStats => {
   
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
-    return JSON.parse(saved);
+    const parsed = JSON.parse(saved);
+    if (!parsed.weeklyBreakdown) {
+      parsed.weeklyBreakdown = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+    }
+    return parsed;
   }
   return defaultStats;
 };
@@ -58,6 +64,14 @@ export const addStudyTime = (minutes: number): void => {
   stats.totalStudyTime += minutes;
   stats.thisWeekMinutes += minutes;
   stats.sessionsCompleted += 1;
+
+  // Track real day-by-day weekly activity
+  const dayMap: Record<number, string> = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+  const dayName = dayMap[new Date().getDay()];
+  if (!stats.weeklyBreakdown) {
+    stats.weeklyBreakdown = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+  }
+  stats.weeklyBreakdown[dayName] = (stats.weeklyBreakdown[dayName] || 0) + minutes;
   
   // Recalculate average session length
   stats.averageSessionLength = Math.round(stats.totalStudyTime / stats.sessionsCompleted);

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Target, Clock, BookOpen, Brain, TrendingUp, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
+import { useLuminaDataSync } from '@/lib/eventBus';
 
 interface StudyTask {
     id: string;
@@ -30,12 +31,18 @@ export default function AIStudyPlanner() {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const user = getCurrentUser();
 
-    useEffect(() => {
+    const loadAll = () => {
         if (user) {
             loadTasks();
             loadExams();
         }
+    };
+
+    useEffect(() => {
+        loadAll();
     }, [user]);
+
+    useLuminaDataSync(loadAll);
 
     const loadTasks = () => {
         const saved = localStorage.getItem(`study_tasks_${user?.id}`);

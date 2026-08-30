@@ -4,6 +4,9 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, X, Loader2, CheckCircle } from 'lucide-react';
 import { uploadDocument } from '@/lib/api';
 import type { UploadResponse } from '@/lib/types';
+import { awardXPForUpload } from '@/lib/xpTriggers';
+import { markDocumentRead } from '@/lib/studyTracker';
+import { notifyLuminaDataUpdated } from '@/lib/eventBus';
 
 interface UploadAreaProps {
   onUploadSuccess: (document: UploadResponse) => void;
@@ -56,6 +59,11 @@ const UploadArea: React.FC<UploadAreaProps> = ({ onUploadSuccess }) => {
       const result = await uploadDocument(file);
       setUploadStatus('success');
       onUploadSuccess(result);
+      
+      // Award XP, track document read, and trigger live tab sync
+      markDocumentRead();
+      awardXPForUpload();
+      notifyLuminaDataUpdated();
       
       // Reset after 2 seconds
       setTimeout(() => {

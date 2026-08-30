@@ -17,6 +17,8 @@ import {
   FlashcardDeck,
 } from '@/lib/flashcards';
 import { listDocuments } from '@/lib/api';
+import { awardXPForFlashcard } from '@/lib/xpTriggers';
+import { notifyLuminaDataUpdated } from '@/lib/eventBus';
 
 export default function FlashcardSystem() {
   const [activeTab, setActiveTab] = useState<'study' | 'create' | 'browse' | 'stats'>('study');
@@ -90,6 +92,8 @@ export default function FlashcardSystem() {
   const handleReview = (quality: number) => {
     if (dueCards[currentCardIndex]) {
       reviewFlashcard(dueCards[currentCardIndex].id, quality);
+      awardXPForFlashcard();
+      notifyLuminaDataUpdated();
       
       // Move to next card
       if (currentCardIndex < dueCards.length - 1) {

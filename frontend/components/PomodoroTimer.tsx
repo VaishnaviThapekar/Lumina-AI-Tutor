@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Settings, Coffee, Brain, Clock } from 'lucide-react';
+import { addStudyTime } from '@/lib/studyTracker';
+import { awardXPForStudySession } from '@/lib/xpTriggers';
+import { notifyLuminaDataUpdated } from '@/lib/eventBus';
 
 type TimerMode = 'focus' | 'break' | 'longBreak';
 
@@ -37,6 +40,13 @@ export default function PomodoroTimer() {
 
     if (mode === 'focus') {
       setPomodorosCompleted((prev) => prev + 1);
+      
+      // Track study time, award XP, and trigger live tab data sync
+      const minsCompleted = Math.round(DEFAULT_TIMES.focus / 60);
+      addStudyTime(minsCompleted);
+      awardXPForStudySession(minsCompleted);
+      notifyLuminaDataUpdated();
+
       // Play browser notification
       if (typeof window !== 'undefined' && 'Notification' in window) {
         if (Notification.permission === 'granted') {

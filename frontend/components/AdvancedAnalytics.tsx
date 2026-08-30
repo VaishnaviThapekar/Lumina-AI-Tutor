@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Calendar, Clock, Target, Award, Zap, BarChart3, PieChart, Activity, RefreshCw } from 'lucide-react';
 import { getStats } from '@/lib/studyTracker';
+import { useLuminaDataSync } from '@/lib/eventBus';
 
 interface ChartData {
   label: string;
@@ -20,14 +21,16 @@ export default function AdvancedAnalytics() {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('week');
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, []);
-
   const loadAnalytics = () => {
     setStats(getStats());
     loadWeeklyData();
   };
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  useLuminaDataSync(loadAnalytics);
 
   const loadWeeklyData = () => {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];

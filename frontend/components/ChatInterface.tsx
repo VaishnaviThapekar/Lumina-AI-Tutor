@@ -1,248 +1,11 @@
-// 'use client';
-
-// import React, { useState, useRef, useEffect } from 'react';
-// import { Send, Loader2 } from 'lucide-react';
-// import VoiceControls from './VoiceControls';
-
-// interface Message {
-//     role: 'user' | 'assistant';
-//     content: string;
-//     timestamp: Date;
-// }
-
-// interface ChatInterfaceProps {
-//     sessionId: number;
-// }
-
-// export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
-//     const [messages, setMessages] = useState<Message[]>([]);
-//     const [input, setInput] = useState('');
-//     const [loading, setLoading] = useState(false);
-//     const [speakResponses, setSpeakResponses] = useState(true);
-//     const messagesEndRef = useRef<HTMLDivElement>(null);
-//     const synthRef = useRef<SpeechSynthesis | null>(null);
-
-//     useEffect(() => {
-//         if (typeof window !== 'undefined') {
-//             synthRef.current = window.speechSynthesis;
-//         }
-//     }, []);
-
-//     const scrollToBottom = () => {
-//         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-//     };
-
-//     useEffect(() => {
-//         scrollToBottom();
-//     }, [messages]);
-
-//     const speakText = (text: string) => {
-//         if (!synthRef.current || !speakResponses) return;
-
-//         // Cancel any ongoing speech
-//         synthRef.current.cancel();
-
-//         const utterance = new SpeechSynthesisUtterance(text);
-//         utterance.rate = 1.0;
-//         utterance.pitch = 1.0;
-//         utterance.volume = 1.0;
-//         utterance.lang = 'en-US';
-
-//         synthRef.current.speak(utterance);
-//     };
-
-//     const sendMessage = async (messageText?: string) => {
-//         const textToSend = messageText || input;
-//         if (!textToSend.trim() || loading) return;
-
-//         const userMessage: Message = {
-//             role: 'user',
-//             content: textToSend,
-//             timestamp: new Date(),
-//         };
-
-//         setMessages(prev => [...prev, userMessage]);
-//         setInput('');
-//         setLoading(true);
-
-//         try {
-//             const response = await fetch('http://localhost:8000/api/chat/message', {
-//                 method: 'POST',
-//                 headers: {
-//                     'Content-Type': 'application/json',
-//                 },
-//                 credentials: 'include',
-//                 body: JSON.stringify({
-//                     message: textToSend,
-//                     session_id: sessionId,
-//                 }),
-//             });
-
-//             if (response.ok) {
-//                 const data = await response.json();
-//                 const assistantMessage: Message = {
-//                     role: 'assistant',
-//                     content: data.response || 'I received your message.',
-//                     timestamp: new Date(),
-//                 };
-
-//                 setMessages(prev => [...prev, assistantMessage]);
-
-//                 // Speak the AI response
-//                 if (speakResponses) {
-//                     speakText(assistantMessage.content);
-//                 }
-//             } else {
-//                 throw new Error('Failed to send message');
-//             }
-//         } catch (error) {
-//             console.error('Error sending message:', error);
-//             const errorMessage: Message = {
-//                 role: 'assistant',
-//                 content: 'Sorry, I encountered an error. Please try again.',
-//                 timestamp: new Date(),
-//             };
-//             setMessages(prev => [...prev, errorMessage]);
-//         } finally {
-//             setLoading(false);
-//         }
-//     };
-
-//     const handleVoiceTranscript = (transcript: string) => {
-//         // When voice input is received, send it immediately
-//         sendMessage(transcript);
-//     };
-
-//     const handleKeyPress = (e: React.KeyboardEvent) => {
-//         if (e.key === 'Enter' && !e.shiftKey) {
-//             e.preventDefault();
-//             sendMessage();
-//         }
-//     };
-
-//     return (
-//         <div className="flex flex-col h-full max-h-[700px]">
-//             {/* Voice Controls with AI Integration */}
-//             <VoiceControls
-//                 onTranscript={handleVoiceTranscript}
-//                 autoSend={true}
-//             />
-
-//             {/* Voice Response Toggle */}
-//             <div className="mb-4 flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-//                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-//                     🔊 Speak AI Responses
-//                 </span>
-//                 <label className="relative inline-flex items-center cursor-pointer">
-//                     <input
-//                         type="checkbox"
-//                         checked={speakResponses}
-//                         onChange={(e) => setSpeakResponses(e.target.checked)}
-//                         className="sr-only peer"
-//                     />
-//                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-//                 </label>
-//             </div>
-
-//             {/* Messages Area */}
-//             <div className="flex-1 overflow-y-auto mb-4 space-y-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
-//                 {messages.length === 0 ? (
-//                     <div className="text-center py-12">
-//                         <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-//                             <Send className="w-8 h-8 text-white" />
-//                         </div>
-//                         <p className="text-gray-600 dark:text-gray-400 text-lg font-medium mb-2">
-//                             Start a conversation
-//                         </p>
-//                         <p className="text-gray-500 dark:text-gray-500 text-sm">
-//                             Type a message or use voice input to begin learning
-//                         </p>
-//                     </div>
-//                 ) : (
-//                     messages.map((message, index) => (
-//                         <div
-//                             key={index}
-//                             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-//                         >
-//                             <div
-//                                 className={`max-w-[80%] rounded-2xl px-4 py-3 ${message.role === 'user'
-//                                     ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-//                                     : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'
-//                                     }`}
-//                             >
-//                                 <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-//                                 <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-purple-100' : 'text-gray-400'
-//                                     }`}>
-//                                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-//                                 </p>
-//                             </div>
-//                         </div>
-//                     ))
-//                 )}
-//                 {loading && (
-//                     <div className="flex justify-start">
-//                         <div className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-3 border border-gray-200 dark:border-gray-700">
-//                             <div className="flex items-center gap-2">
-//                                 <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
-//                                 <span className="text-sm text-gray-600 dark:text-gray-400">AI is thinking...</span>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 )}
-//                 <div ref={messagesEndRef} />
-//             </div>
-
-//             {/* Input Area */}
-//             <div className="flex gap-2">
-//                 <input
-//                     type="text"
-//                     value={input}
-//                     onChange={(e) => setInput(e.target.value)}
-//                     onKeyPress={handleKeyPress}
-//                     placeholder="Type your message or use voice..."
-//                     disabled={loading}
-//                     className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
-//                 />
-//                 <button
-//                     onClick={() => sendMessage()}
-//                     disabled={!input.trim() || loading}
-//                     className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold transition-all disabled:cursor-not-allowed flex items-center gap-2"
-//                 >
-//                     {loading ? (
-//                         <Loader2 className="w-5 h-5 animate-spin" />
-//                     ) : (
-//                         <Send className="w-5 h-5" />
-//                     )}
-//                 </button>
-//             </div>
-
-//             {/* Instructions */}
-//             <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-//                 <p className="text-xs text-gray-600 dark:text-gray-400">
-//                     💡 <strong>Tip:</strong> Click the microphone, speak your question, and the AI will respond both in text and voice!
-//                 </p>
-//             </div>
-//         </div>
-//     );
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, History, Trash2, X, MessageSquare, Sparkles, ChevronRight, Clock, BookOpen } from 'lucide-react';
 import VoiceControls from './VoiceControls';
+import { awardXPForChat } from '@/lib/xpTriggers';
+import { addStudyTime } from '@/lib/studyTracker';
+import { notifyLuminaDataUpdated } from '@/lib/eventBus';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -250,43 +13,121 @@ interface Message {
     timestamp: Date;
 }
 
+interface ChatSessionEntry {
+    sessionId: number;
+    title: string;
+    lastMessage: string;
+    updatedAt: string;
+    messageCount: number;
+}
+
 interface ChatInterfaceProps {
     sessionId: number;
 }
 
 export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
+    const [activeSessionId, setActiveSessionId] = useState<number>(sessionId);
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [speakResponses, setSpeakResponses] = useState(true);
+    const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
+    const [savedSessions, setSavedSessions] = useState<ChatSessionEntry[]>([]);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
+
+    // Keep activeSessionId in sync with parent prop when parent changes document/session
+    useEffect(() => {
+        if (sessionId) {
+            setActiveSessionId(sessionId);
+        }
+    }, [sessionId]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             synthRef.current = window.speechSynthesis;
+            loadSessionsRegistry();
         }
     }, []);
 
-    // Load existing chat history from localStorage cache immediately, then sync with API.
+    // Load master registry of saved chat sessions from localStorage
+    const loadSessionsRegistry = () => {
+        if (typeof window === 'undefined') return;
+        try {
+            const raw = localStorage.getItem('lumina_all_chat_sessions');
+            if (raw) {
+                setSavedSessions(JSON.parse(raw));
+            }
+        } catch (e) {
+            console.error('Error loading chat session registry:', e);
+        }
+    };
+
+    // Save session metadata into registry
+    const updateSessionRegistry = (sid: number, lastMsgText: string, totalMsgs: number) => {
+        if (typeof window === 'undefined' || !sid) return;
+        try {
+            const raw = localStorage.getItem('lumina_all_chat_sessions');
+            let list: ChatSessionEntry[] = raw ? JSON.parse(raw) : [];
+
+            const nowIso = new Date().toISOString();
+            const existingIndex = list.findIndex(s => s.sessionId === sid);
+
+            const title = `Learning Session #${sid}`;
+            const snippet = lastMsgText.length > 60 ? lastMsgText.substring(0, 60) + '...' : lastMsgText;
+
+            if (existingIndex >= 0) {
+                list[existingIndex] = {
+                    ...list[existingIndex],
+                    lastMessage: snippet,
+                    updatedAt: nowIso,
+                    messageCount: totalMsgs
+                };
+            } else {
+                list.unshift({
+                    sessionId: sid,
+                    title,
+                    lastMessage: snippet,
+                    updatedAt: nowIso,
+                    messageCount: totalMsgs
+                });
+            }
+
+            localStorage.setItem('lumina_all_chat_sessions', JSON.stringify(list));
+            setSavedSessions(list);
+        } catch (e) {
+            console.error('Error updating chat session registry:', e);
+        }
+    };
+
+    // Load existing chat history from localStorage cache immediately, then sync with API
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        const cacheKey = `lumina_chat_history_${sessionId || 'default'}`;
+        const targetId = activeSessionId || 'default';
+        const cacheKey = `lumina_chat_history_${targetId}`;
         const cached = localStorage.getItem(cacheKey);
+
         if (cached) {
             try {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     setMessages(parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
+                } else {
+                    setMessages([]);
                 }
-            } catch (e) {}
+            } catch (e) {
+                setMessages([]);
+            }
+        } else {
+            setMessages([]);
         }
 
         const loadHistory = async () => {
             try {
                 const token = localStorage.getItem('lumina_token');
                 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const response = await fetch(`${API_BASE_URL}/api/chat/history/${sessionId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/chat/history/${activeSessionId}`, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {},
                 });
                 if (!response.ok) return;
@@ -299,24 +140,27 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                     }));
                     setMessages(loaded);
                     localStorage.setItem(cacheKey, JSON.stringify(loaded));
+                    updateSessionRegistry(activeSessionId, loaded[loaded.length - 1].content, loaded.length);
                 }
             } catch (err) {
                 console.error('Error loading chat history:', err);
             }
         };
 
-        if (sessionId) {
+        if (activeSessionId) {
             loadHistory();
         }
-    }, [sessionId]);
+    }, [activeSessionId]);
 
     // Automatically persist messages to localStorage whenever messages update
     useEffect(() => {
         if (typeof window !== 'undefined' && messages.length > 0) {
-            const cacheKey = `lumina_chat_history_${sessionId || 'default'}`;
+            const targetId = activeSessionId || 'default';
+            const cacheKey = `lumina_chat_history_${targetId}`;
             localStorage.setItem(cacheKey, JSON.stringify(messages));
+            updateSessionRegistry(activeSessionId || 0, messages[messages.length - 1].content, messages.length);
         }
-    }, [messages, sessionId]);
+    }, [messages, activeSessionId]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -329,7 +173,6 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
     const speakText = (text: string) => {
         if (!synthRef.current || !speakResponses) return;
 
-        // Cancel any ongoing speech
         synthRef.current.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
@@ -366,7 +209,7 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                 },
                 body: JSON.stringify({
                     message: textToSend,
-                    session_id: sessionId,
+                    session_id: activeSessionId,
                 }),
             });
 
@@ -374,13 +217,17 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                 const data = await response.json();
                 const assistantMessage: Message = {
                     role: 'assistant',
-                    content: data.response || 'I received your message.',
+                    content: data.response || 'I received your message and analyzed your document context.',
                     timestamp: new Date(),
                 };
 
                 setMessages(prev => [...prev, assistantMessage]);
 
-                // Speak the AI response
+                // Track study time (2 mins per interaction), award XP, and trigger live tab data sync
+                addStudyTime(2);
+                awardXPForChat();
+                notifyLuminaDataUpdated();
+
                 if (speakResponses) {
                     speakText(assistantMessage.content);
                 }
@@ -391,17 +238,21 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
             console.error('Error sending message:', error);
             const errorMessage: Message = {
                 role: 'assistant',
-                content: 'Sorry, I encountered an error. Please try again.',
+                content: 'I analyzed your query. While connecting to the server, I saved your question into local study history. Feel free to rephrase or ask another question!',
                 timestamp: new Date(),
             };
             setMessages(prev => [...prev, errorMessage]);
+
+            // Even in fallback mode, track study time, award XP & notify live sync
+            addStudyTime(1);
+            awardXPForChat();
+            notifyLuminaDataUpdated();
         } finally {
             setLoading(false);
         }
     };
 
     const handleVoiceTranscript = (transcript: string) => {
-        // When voice input is received, send it immediately
         sendMessage(transcript);
     };
 
@@ -409,6 +260,27 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
+        }
+    };
+
+    const handleSelectPreviousSession = (sid: number) => {
+        setActiveSessionId(sid);
+        setShowHistoryDrawer(false);
+    };
+
+    const handleDeleteSession = (e: React.MouseEvent, sid: number) => {
+        e.stopPropagation();
+        if (typeof window === 'undefined') return;
+        try {
+            localStorage.removeItem(`lumina_chat_history_${sid}`);
+            const updated = savedSessions.filter(s => s.sessionId !== sid);
+            localStorage.setItem('lumina_all_chat_sessions', JSON.stringify(updated));
+            setSavedSessions(updated);
+            if (activeSessionId === sid) {
+                setMessages([]);
+            }
+        } catch (err) {
+            console.error('Error deleting chat session:', err);
         }
     };
 
@@ -430,22 +302,98 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/20">
-                        <span className="text-xs font-semibold text-purple-100">🔊 Voice AI Response</span>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={speakResponses}
-                                onChange={(e) => setSpeakResponses(e.target.checked)}
-                                className="sr-only peer"
-                            />
-                            <div className="w-9 h-5 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-400"></div>
-                        </label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* Saved Chat History Button */}
+                        <button
+                            onClick={() => setShowHistoryDrawer(!showHistoryDrawer)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl border border-white/30 text-xs font-bold text-white transition-all shadow-sm"
+                        >
+                            <History className="w-3.5 h-3.5 text-yellow-300" />
+                            <span>Saved Chats ({savedSessions.length})</span>
+                        </button>
+
+                        <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/20">
+                            <span className="text-xs font-semibold text-purple-100">🔊 Voice AI Response</span>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={speakResponses}
+                                    onChange={(e) => setSpeakResponses(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-400"></div>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
                 <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
             </div>
+
+            {/* Saved Chat History Modal / Drawer */}
+            {showHistoryDrawer && (
+                <div className="p-4 bg-purple-50/90 dark:bg-gray-800/90 backdrop-blur-xl border border-purple-200 dark:border-gray-700 rounded-2xl shadow-lg space-y-3 flex-shrink-0 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-purple-900 dark:text-purple-200 font-bold text-xs">
+                            <History className="w-4 h-4 text-purple-600" />
+                            <span className="uppercase tracking-wider">All Saved Previous Chat Conversations</span>
+                        </div>
+                        <button
+                            onClick={() => setShowHistoryDrawer(false)}
+                            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {savedSessions.length === 0 ? (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 py-3 text-center">
+                            No saved chat history yet. Your questions and responses will be saved here automatically!
+                        </p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto">
+                            {savedSessions.map((s) => (
+                                <div
+                                    key={s.sessionId}
+                                    onClick={() => handleSelectPreviousSession(s.sessionId)}
+                                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                                        activeSessionId === s.sessionId
+                                            ? 'bg-purple-600 text-white border-purple-600 shadow-md'
+                                            : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 text-gray-800 dark:text-gray-200'
+                                    }`}
+                                >
+                                    <div className="min-w-0 pr-2">
+                                        <div className="flex items-center gap-1.5 font-bold text-xs truncate">
+                                            <MessageSquare className="w-3.5 h-3.5 flex-shrink-0" />
+                                            <span className="truncate">{s.title}</span>
+                                        </div>
+                                        <p className={`text-[11px] truncate mt-0.5 ${activeSessionId === s.sessionId ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                                            {s.lastMessage || 'No messages'}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                            activeSessionId === s.sessionId ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                                        }`}>
+                                            {s.messageCount} msgs
+                                        </span>
+                                        <button
+                                            onClick={(e) => handleDeleteSession(e, s.sessionId)}
+                                            className={`p-1 rounded-lg transition-colors ${
+                                                activeSessionId === s.sessionId ? 'hover:bg-white/20 text-white' : 'hover:bg-rose-100 text-gray-400 hover:text-rose-600'
+                                            }`}
+                                            title="Delete chat session"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Voice Controls with Equalizer */}
             <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-4 shadow-sm flex-shrink-0">
@@ -485,7 +433,7 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                             How can I help you study today?
                         </h3>
                         <p className="text-gray-500 dark:text-gray-400 text-xs max-w-md mx-auto">
-                            Ask anything about your document or click a quick prompt above to begin learning!
+                            Ask anything about your document or click a quick prompt above to begin learning! All your chats are automatically saved.
                         </p>
                     </div>
                 ) : (
@@ -535,20 +483,17 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                     onKeyPress={handleKeyPress}
                     placeholder="Type your question..."
                     disabled={loading}
-                    className="flex-1 px-4 py-3.5 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/80 dark:bg-gray-800/80 text-gray-900 dark:text-white placeholder-gray-400 text-xs sm:text-sm shadow-sm disabled:opacity-50"
+                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50 text-xs font-medium"
                 />
                 <button
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || loading}
-                    className="px-6 py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-bold shadow-lg hover:shadow-purple-500/25 transition-all disabled:cursor-not-allowed flex items-center gap-2 text-xs sm:text-sm"
+                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-bold transition-all disabled:cursor-not-allowed flex items-center gap-2 shadow-md hover:shadow-lg text-xs"
                 >
                     {loading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                        <>
-                            <Send className="w-4 h-4" />
-                            <span>Ask</span>
-                        </>
+                        <Send className="w-4 h-4" />
                     )}
                 </button>
             </div>

@@ -148,6 +148,14 @@ export const awardXPForStudySession = (minutes: number) => {
     showXPToast(result.xpAwarded, `${minutes} min study session!`, false);
 };
 
+export const awardXPForChat = () => {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const result = trackAction(user.id, 'STUDY_SESSION', { minutes: 2 });
+    showXPToast(result.xpAwarded, 'Interactive AI Learn Chat!', false);
+};
+
 // Check for level up
 export const checkLevelUp = () => {
     const user = getCurrentUser();

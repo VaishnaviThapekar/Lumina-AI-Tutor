@@ -4,6 +4,9 @@ import React, { useState } from 'react';
 import { CheckCircle, XCircle, Trophy, Loader2 } from 'lucide-react';
 import type { Quiz, QuizQuestion, QuizResult } from '@/lib/types';
 import { generateQuiz, submitQuiz } from '@/lib/api';
+import { addQuizResult } from '@/lib/studyTracker';
+import { awardXPForQuiz } from '@/lib/xpTriggers';
+import { notifyLuminaDataUpdated } from '@/lib/eventBus';
 
 interface QuizModuleProps {
   sessionId: number;
@@ -82,6 +85,12 @@ const QuizModule: React.FC<QuizModuleProps> = ({
       const quizResult = await submitQuiz(quiz.quiz_id, sessionId, selectedAnswers);
       setResult(quizResult);
       onCompetencyUpdate(quizResult.updated_competency_score);
+
+      // Track quiz result, award XP, and trigger live tab sync
+      const scorePct = Math.round((quizResult.score / quizResult.total_questions) * 100);
+      addQuizResult(scorePct);
+      awardXPForQuiz(scorePct);
+      notifyLuminaDataUpdated();
     } catch (error) {
       console.error('Error submitting quiz:', error);
       alert('Failed to submit quiz. Please try again.');

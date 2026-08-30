@@ -235,12 +235,13 @@ import {
     type UserProgress
 } from '@/lib/gamification';
 import { getCurrentUser } from '@/lib/auth';
+import { useLuminaDataSync } from '@/lib/eventBus';
 
 export default function GamificationDashboard() {
     const [progress, setProgress] = useState<UserProgress | null>(null);
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
-    useEffect(() => {
+    const loadData = () => {
         const user = getCurrentUser();
         if (user) {
             updateDailyStreak(user.id);
@@ -248,7 +249,13 @@ export default function GamificationDashboard() {
             setProgress(userProgress);
             setLeaderboard(getLeaderboard());
         }
-    }, []); // Empty dependency array - run once on mount
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    useLuminaDataSync(loadData);
 
     if (!progress) {
         return (

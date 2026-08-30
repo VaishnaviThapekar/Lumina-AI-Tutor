@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, BookOpen, TrendingUp, Award, Calendar, Target, BarChart3, Zap } from 'lucide-react';
 
+import { useLuminaDataSync } from '@/lib/eventBus';
+
 interface StudyStats {
   totalStudyTime: number; // in minutes
   documentsRead: number;
@@ -30,10 +32,6 @@ export default function StudyStatistics() {
     averageScore: 0,
   });
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
   const loadStats = () => {
     // Load from localStorage
     const savedStats = localStorage.getItem('studyStats');
@@ -41,6 +39,12 @@ export default function StudyStatistics() {
       setStats(JSON.parse(savedStats));
     }
   };
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  useLuminaDataSync(loadStats);
 
   const formatTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);

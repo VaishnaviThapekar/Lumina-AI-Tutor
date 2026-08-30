@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Clock, BookOpen, TrendingUp, Award, Calendar, Target, BarChart3, Zap } from 'lucide-react';
-
 import { useLuminaDataSync } from '@/lib/eventBus';
 
 interface StudyStats {
@@ -33,7 +32,6 @@ export default function StudyStatistics() {
   });
 
   const loadStats = () => {
-    // Load from localStorage
     const savedStats = localStorage.getItem('studyStats');
     if (savedStats) {
       setStats(JSON.parse(savedStats));
@@ -59,7 +57,6 @@ export default function StudyStatistics() {
     ? ((stats.thisWeekMinutes - stats.lastWeekMinutes) / stats.lastWeekMinutes * 100)
     : 0;
 
-  // Calculate progress for weekly goal (target: 300 minutes/week)
   const weeklyGoal = 300;
   const weeklyProgressPercent = Math.min((stats.thisWeekMinutes / weeklyGoal) * 100, 100);
 
@@ -101,7 +98,7 @@ export default function StudyStatistics() {
               Overall Time
             </span>
           </div>
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Study Time</div>
+          <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total Study Time</div>
           <div className="text-2xl font-extrabold text-gray-900 dark:text-white">
             {formatTime(stats.totalStudyTime)}
           </div>
@@ -120,7 +117,7 @@ export default function StudyStatistics() {
               Reading
             </span>
           </div>
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Documents Analyzed</div>
+          <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Documents Analyzed</div>
           <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.documentsRead} Docs</div>
           <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">Active documents in tutor</p>
         </div>
@@ -135,7 +132,7 @@ export default function StudyStatistics() {
               Streak
             </span>
           </div>
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Daily Study Streak</div>
+          <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Daily Study Streak</div>
           <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.currentStreak} Days 🔥</div>
           <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">Consecutive active study days</p>
         </div>
@@ -150,53 +147,53 @@ export default function StudyStatistics() {
               Quizzes
             </span>
           </div>
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Quiz Score Average</div>
+          <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Quiz Score Average</div>
           <div className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.averageScore}%</div>
         </div>
       </div>
 
       {/* Weekly Progress */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-gray-800">This Week's Progress</h3>
+            <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <h3 className="font-bold text-gray-900 dark:text-white">This Week's Progress</h3>
           </div>
           <div className="text-sm">
-            <span className="font-semibold text-gray-800">{formatTime(stats.thisWeekMinutes)}</span>
-            <span className="text-gray-500"> / {formatTime(weeklyGoal)}</span>
+            <span className="font-bold text-gray-900 dark:text-white">{formatTime(stats.thisWeekMinutes)}</span>
+            <span className="text-gray-500 dark:text-gray-400"> / {formatTime(weeklyGoal)}</span>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="relative h-4 bg-gray-200 rounded-full overflow-hidden mb-3">
+        <div className="relative h-4 bg-gray-200/70 dark:bg-gray-700/70 rounded-full overflow-hidden mb-3">
           <div 
-            className="absolute h-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-500"
+            className="absolute h-full bg-gradient-to-r from-purple-500 via-indigo-500 to-pink-500 rounded-full transition-all duration-500"
             style={{ width: `${weeklyProgressPercent}%` }}
           />
         </div>
 
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-xs font-medium">
           <div className="flex items-center gap-2">
             {weeklyProgress > 0 ? (
               <>
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="text-green-600 font-medium">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <span className="text-emerald-500 font-semibold">
                   +{weeklyProgress.toFixed(0)}% from last week
                 </span>
               </>
             ) : weeklyProgress < 0 ? (
               <>
-                <TrendingUp className="w-4 h-4 text-red-600 rotate-180" />
-                <span className="text-red-600 font-medium">
+                <TrendingUp className="w-4 h-4 text-rose-500 rotate-180" />
+                <span className="text-rose-500 font-semibold">
                   {weeklyProgress.toFixed(0)}% from last week
                 </span>
               </>
             ) : (
-              <span className="text-gray-500">Same as last week</span>
+              <span className="text-gray-500 dark:text-gray-400">Same as last week</span>
             )}
           </div>
-          <span className="text-gray-500">
+          <span className="text-gray-500 dark:text-gray-400 font-bold">
             {Math.round(weeklyProgressPercent)}% of goal
           </span>
         </div>
@@ -205,86 +202,102 @@ export default function StudyStatistics() {
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Sessions */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Target className="w-5 h-5 text-blue-600" />
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3.5 mb-3">
+            <div className="p-3 bg-blue-500/10 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl">
+              <Target className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-800">
+              <div className="text-2xl font-extrabold text-gray-900 dark:text-white">
                 {stats.sessionsCompleted}
               </div>
-              <div className="text-sm text-gray-600">Study Sessions</div>
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">Study Sessions</div>
             </div>
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             Avg. {stats.averageSessionLength} min per session
           </div>
         </div>
 
         {/* Quizzes */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <BarChart3 className="w-5 h-5 text-purple-600" />
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3.5 mb-3">
+            <div className="p-3 bg-purple-500/10 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl">
+              <BarChart3 className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-800">
+              <div className="text-2xl font-extrabold text-gray-900 dark:text-white">
                 {stats.quizzesCompleted}
               </div>
-              <div className="text-sm text-gray-600">Quizzes Taken</div>
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">Quizzes Taken</div>
             </div>
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             {stats.averageScore}% average score
           </div>
         </div>
 
         {/* Best Streak */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Award className="w-5 h-5 text-orange-600" />
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3.5 mb-3">
+            <div className="p-3 bg-amber-500/10 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl">
+              <Award className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-800">
+              <div className="text-2xl font-extrabold text-gray-900 dark:text-white">
                 {stats.longestStreak}
               </div>
-              <div className="text-sm text-gray-600">Longest Streak</div>
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">Longest Streak</div>
             </div>
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             Current: {stats.currentStreak} days 🔥
           </div>
         </div>
       </div>
 
       {/* Achievements Section */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Award className="w-5 h-5 text-yellow-500" />
+      <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-6 shadow-sm">
+        <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <Award className="w-5 h-5 text-amber-500" />
           Recent Achievements
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {/* Achievement Badges */}
-          <div className={`p-4 rounded-lg text-center ${stats.documentsRead >= 1 ? 'bg-yellow-50 border-2 border-yellow-400' : 'bg-gray-100 border-2 border-gray-300 opacity-50'}`}>
-            <div className="text-3xl mb-2">📚</div>
-            <div className="text-xs font-medium text-gray-700">First Document</div>
+          <div className={`p-4 rounded-xl text-center transition-all ${
+            stats.documentsRead >= 1 
+              ? 'bg-amber-500/10 dark:bg-amber-900/20 border border-amber-400/50 dark:border-amber-500/40 text-amber-900 dark:text-amber-200 shadow-sm' 
+              : 'bg-gray-100/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 opacity-40'
+          }`}>
+            <div className="text-3xl mb-1.5">📚</div>
+            <div className="text-xs font-bold">First Document</div>
           </div>
           
-          <div className={`p-4 rounded-lg text-center ${stats.totalStudyTime >= 60 ? 'bg-yellow-50 border-2 border-yellow-400' : 'bg-gray-100 border-2 border-gray-300 opacity-50'}`}>
-            <div className="text-3xl mb-2">⏰</div>
-            <div className="text-xs font-medium text-gray-700">1 Hour Scholar</div>
+          <div className={`p-4 rounded-xl text-center transition-all ${
+            stats.totalStudyTime >= 60 
+              ? 'bg-amber-500/10 dark:bg-amber-900/20 border border-amber-400/50 dark:border-amber-500/40 text-amber-900 dark:text-amber-200 shadow-sm' 
+              : 'bg-gray-100/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 opacity-40'
+          }`}>
+            <div className="text-3xl mb-1.5">⏰</div>
+            <div className="text-xs font-bold">1 Hour Scholar</div>
           </div>
           
-          <div className={`p-4 rounded-lg text-center ${stats.currentStreak >= 3 ? 'bg-yellow-50 border-2 border-yellow-400' : 'bg-gray-100 border-2 border-gray-300 opacity-50'}`}>
-            <div className="text-3xl mb-2">🔥</div>
-            <div className="text-xs font-medium text-gray-700">3 Day Streak</div>
+          <div className={`p-4 rounded-xl text-center transition-all ${
+            stats.currentStreak >= 3 
+              ? 'bg-amber-500/10 dark:bg-amber-900/20 border border-amber-400/50 dark:border-amber-500/40 text-amber-900 dark:text-amber-200 shadow-sm' 
+              : 'bg-gray-100/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 opacity-40'
+          }`}>
+            <div className="text-3xl mb-1.5">🔥</div>
+            <div className="text-xs font-bold">3 Day Streak</div>
           </div>
           
-          <div className={`p-4 rounded-lg text-center ${stats.quizzesCompleted >= 5 ? 'bg-yellow-50 border-2 border-yellow-400' : 'bg-gray-100 border-2 border-gray-300 opacity-50'}`}>
-            <div className="text-3xl mb-2">🎯</div>
-            <div className="text-xs font-medium text-gray-700">Quiz Master</div>
+          <div className={`p-4 rounded-xl text-center transition-all ${
+            stats.quizzesCompleted >= 5 
+              ? 'bg-amber-500/10 dark:bg-amber-900/20 border border-amber-400/50 dark:border-amber-500/40 text-amber-900 dark:text-amber-200 shadow-sm' 
+              : 'bg-gray-100/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 opacity-40'
+          }`}>
+            <div className="text-3xl mb-1.5">🎯</div>
+            <div className="text-xs font-bold">Quiz Master</div>
           </div>
         </div>
       </div>

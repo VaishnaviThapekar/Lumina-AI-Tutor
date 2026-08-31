@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Sparkles, Brain, Zap, Target, TrendingUp, Users, Award, ChevronRight, Play, Moon, Sun, X } from 'lucide-react';
+import PlatformDemoModal from '@/components/PlatformDemoModal';
 
 export default function HomePage() {
   const router = useRouter();
@@ -158,30 +159,11 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Demo Video Modal */}
-          {showDemoModal && (
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-              onClick={() => setShowDemoModal(false)}
-            >
-              <div
-                className="relative w-full max-w-3xl bg-black rounded-2xl overflow-hidden shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => setShowDemoModal(false)}
-                  className="absolute top-3 right-3 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-                  aria-label="Close demo video"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-                <video controls autoPlay className="w-full aspect-video">
-                  <source src="/demo.mp4" type="video/mp4" />
-                  Your browser doesn&apos;t support embedded video.
-                </video>
-              </div>
-            </div>
-          )}
+          {/* Platform Demo Modal */}
+          <PlatformDemoModal
+            isOpen={showDemoModal}
+            onClose={() => setShowDemoModal(false)}
+          />
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto pt-12">

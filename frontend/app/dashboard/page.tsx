@@ -712,11 +712,11 @@ export default function Dashboard() {
                             </div>
 
                             <div className="min-h-[600px] p-6">
-                                <div className={activeTab === 'upload' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'upload' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <UploadArea onUploadSuccess={handleUploadSuccess} />
                                 </div>
 
-                                <div className={activeTab === 'chat' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'chat' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <div className="space-y-6">
                                         {currentSession ? (
                                             <ChatInterface sessionId={currentSession.id} />
@@ -742,7 +742,7 @@ export default function Dashboard() {
                                     </div>
                                 </div>
 
-                                <div className={activeTab === 'quiz' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'quiz' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     {currentSession ? (
                                         <QuizModule
                                             sessionId={currentSession.id}
@@ -760,39 +760,39 @@ export default function Dashboard() {
                                     )}
                                 </div>
 
-                                <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'stats' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <StudyStatistics />
                                 </div>
 
-                                <div className={activeTab === 'analytics' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'analytics' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <AdvancedAnalytics />
                                 </div>
 
-                                <div className={activeTab === 'timer' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'timer' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <PomodoroTimer />
                                 </div>
 
-                                <div className={activeTab === 'notes' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'notes' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <NoteTakingSystem />
                                 </div>
 
-                                <div className={activeTab === 'social' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'social' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <SocialHub />
                                 </div>
 
-                                <div className={activeTab === 'flashcards' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'flashcards' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <FlashcardSystem />
                                 </div>
 
-                                <div className={activeTab === 'gamification' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'gamification' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <GamificationDashboard />
                                 </div>
 
-                                <div className={activeTab === 'planner' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'planner' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <AIStudyPlanner />
                                 </div>
 
-                                <div className={activeTab === 'concept-map' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'concept-map' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <ConceptMap
                                         documentId={currentSession?.document_id}
                                         documentTitle={currentSession ? `Document #${currentSession.document_id}` : undefined}
@@ -802,28 +802,28 @@ export default function Dashboard() {
                                     />
                                 </div>
 
-                                <div className={activeTab === 'podcast' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'podcast' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <AIAudioPodcast
                                         documentId={currentSession?.document_id}
                                         documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
                                     />
                                 </div>
 
-                                <div className={activeTab === 'multidoc' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'multidoc' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <MultiDocWorkspace onNavigateToChat={() => setActiveTab('chat')} />
                                 </div>
 
-                                <div className={activeTab === 'evaluator' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'evaluator' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <EssayEvaluator
                                         documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
                                     />
                                 </div>
 
-                                <div className={activeTab === 'sprint' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'sprint' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <SpeedStudySprint />
                                 </div>
 
-                                <div className={activeTab === 'videos' ? 'block' : 'hidden'}>
+                                <div className={activeTab === 'videos' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <YouTubeRecommendations
                                         documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
                                     />

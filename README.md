@@ -1,67 +1,73 @@
 # 🎓 Lumina AI Tutor
 
-> Your Adaptive AI-Powered Learning Companion
+> **Your Next-Gen Adaptive AI-Powered Learning Companion**
 
-An intelligent tutoring platform that personalizes education through AI-powered conversations, voice interaction, and adaptive learning techniques.
+[![Live Demo](https://img.shields.io/badge/Live%20App-lumina--ai--tutor.vercel.app-7c3aed?style=for-the-badge&logo=vercel)](https://lumina-ai-tutor.vercel.app/)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-VaishnaviThapekar%2FLumina--AI--Tutor-181717?style=for-the-badge&logo=github)](https://github.com/VaishnaviThapekar/Lumina-AI-Tutor)
+[![Status](https://img.shields.io/badge/Status-Active%20Production-success?style=for-the-badge)]()
+[![Next.js 14](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 
-![Lumina AI Tutor](https://img.shields.io/badge/Status-Active-success)
-![Next.js](https://img.shields.io/badge/Next.js-14-black)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.104-green)
-![Python](https://img.shields.io/badge/Python-3.11-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
-
----
-
-## ✨ Features
-
-### 🤖 AI-Powered Learning
-- **Voice-Controlled Chat**: Hands-free learning with speech recognition and text-to-speech
-- **Document Q&A**: Upload PDFs and ask questions using RAG (Retrieval-Augmented Generation)
-- **Adaptive Responses**: AI adjusts explanations based on your understanding level
-
-### 📚 Study Tools
-- **Smart Quizzes**: Auto-generated questions with adaptive difficulty
-- **Flashcards**: Spaced repetition system for better retention
-- **Pomodoro Timer**: Built-in focus timer with break reminders
-- **Note Taking**: Rich text editor with AI-powered suggestions
-
-### 📊 Analytics & Progress
-- **Real-time Statistics**: Track study time, topics mastered, quiz scores
-- **Advanced Analytics**: Visualize learning patterns and progress
-- **Mastery Levels**: Gamified progression system (Beginner → Intermediate → Advanced)
-- **XP & Rewards**: Earn points for completing activities
-
-### 👥 Social Features
-- **Study Groups**: Collaborate with peers
-- **Leaderboards**: Compete with other learners
-- **Progress Sharing**: Share achievements
-
-### 🎯 Additional Features
-- **AI Study Planner**: Automatically schedule study sessions
-- **Multi-Document Support**: Work with multiple documents simultaneously
-- **Dark/Light Mode**: Comfortable viewing in any environment
-- **Responsive Design**: Works on desktop, tablet, and mobile
+An intelligent, adaptive tutoring platform that personalizes education through Retrieval-Augmented Generation (RAG), Socratic voice AI conversations, interactive concept maps, audio overview podcasts, spaced repetition, and real-time competency analytics.
 
 ---
 
-## 🚀 Quick Start
+## ✨ Core Features & Highlights
+
+### 🎙️ 1. AI Audio Podcast Studio ("NotebookLM Style")
+- **Conversational Audio Summaries**: Generates a 2-person Socratic podcast dialog (Host Alex & Co-Host Maya) breaking down complex concepts from uploaded documents.
+- **Web Speech Audio Player**: Native voice synthesis with play, pause, segment navigation, speed adjustment (`1.0x`, `1.25x`, `1.5x`, `2.0x`), and downloadable transcript scripts.
+
+### 📺 2. YouTube Video Recommendations Hub
+- **Topic-Based Video Tutorials**: Automatically curates top-rated YouTube educational tutorials matching document concepts (*Networking*, *BGP Routing*, *OSI 7 Layers*, *Vector RAG*, *Calculus*).
+- **Inline Modal Video Player**: Watch tutorials directly inside Lumina without leaving the workspace.
+
+### 📚 3. Multi-Document Synthesis Workspace
+- **Cross-Document Search**: Select multiple uploaded PDFs simultaneously using multi-select checkboxes.
+- **Comparative Analysis**: Generates unified Socratic summaries, overlapping core themes, and file comparison matrices across your entire document library.
+
+### 📝 4. Socratic Open-Response & Essay Evaluator
+- **Active Recall Evaluator**: Type or paste written summaries to receive instant Socratic AI evaluation.
+- **Academic Rubric Scoring**: Grades responses across **Conceptual Depth**, **Factual Accuracy**, **Structure & Clarity**, and **Key Term Coverage**, identifying missing concepts and awarding XP.
+
+### ⚡ 5. 60-Second "Speed Study Sprint" Challenge Mode
+- **High-Energy Gamification**: Rapid-fire True/False concept testing under a 60-second countdown.
+- **Streak Multipliers**: Build streak combos to unlock up to **5x XP Multipliers** and track high scores.
+
+### 📊 6. Dynamic Concept Map Visualizer
+- **Mermaid Dependency Graphs**: Automatically extracts topic nodes and renders interactive dependency trees.
+- **Action Shortcuts**: Click any node to instantly launch targeted Quizzes, Flashcards, or YouTube Video recommendations.
+
+### 🧠 7. Smart Flashcards & 1-Click Anki Export
+- **SM-2 Spaced Repetition**: Rate card recall using SM-2 intervals (*Again*, *Hard*, *Good*, *Easy*).
+- **Anki CSV Export**: Export generated flashcards directly into Anki desktop or mobile app format.
+
+### 💾 8. Persistent Multi-Session Saved Chat Drawer
+- **Multi-Session Registry**: Browser registry (`lumina_all_chat_sessions`) saves all past Socratic AI chat sessions so conversation history persists seamlessly across tab switches.
+
+### 🎨 9. Glassmorphism UI & Smooth Section Entrance Animations
+- **Hardware-Accelerated Transitions**: Smooth cubic-bezier slide-up and fade-in animations (`animate-fade-in-slide-up`) on all section tab switches.
+- **Custom Brand Identity**: Custom vector blue/purple open-book SVG favicon and adaptive Dark/Light mode theme engine.
+
+---
+
+## 🚀 Quick Start Guide
 
 ### Prerequisites
 
-- **Node.js** 18+ and npm
+- **Node.js** 18+ and `npm`
 - **Python** 3.11+
-- **Google AI API Key** (free from [Google AI Studio](https://makersuite.google.com/app/apikey))
+- **Google AI API Key** (Free from [Google AI Studio](https://makersuite.google.com/app/apikey))
 
-### Installation
-
-#### 1. Clone the Repository
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/lumina-ai-tutor.git
-cd lumina-ai-tutor
+git clone https://github.com/VaishnaviThapekar/Lumina-AI-Tutor.git
+cd Lumina-AI-Tutor
 ```
 
-#### 2. Backend Setup
+### 2. Backend Setup
 
 ```bash
 cd backend
@@ -70,26 +76,26 @@ cd backend
 python -m venv venv
 
 # Activate virtual environment
-# Windows:
-venv\Scripts\activate
+# Windows (PowerShell):
+.\venv\Scripts\activate
 # macOS/Linux:
 source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Create .env file
+# Create .env file from template
 cp .env.example .env
-# Edit .env and add your API keys
+# Edit .env and add your GOOGLE_API_KEY / GEMINI_API_KEY
 
-# Start backend
+# Start FastAPI backend server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### 3. Frontend Setup
+### 3. Frontend Setup
 
 ```bash
-cd frontend
+cd ../frontend
 
 # Install dependencies
 npm install
@@ -97,156 +103,99 @@ npm install
 # Create .env.local file
 cp .env.example .env.local
 
-# Start frontend
+# Start Next.js development server
 npm run dev
 ```
 
-#### 4. Access the Application
+### 4. Access the Platform
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
+- 🌐 **Frontend Application**: [http://localhost:3000](http://localhost:3000)
+- ⚙️ **Backend FastAPI Server**: [http://localhost:8000](http://localhost:8000)
+- 📖 **Interactive Swagger API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
-## 🔧 Configuration
+## 🔧 Environment Configuration
 
-### Backend Environment Variables
-
-Create `backend/.env`:
+### Backend Environment Variables (`backend/.env`)
 
 ```env
-# Google AI API Keys (get from https://makersuite.google.com/app/apikey)
-GOOGLE_API_KEY=your_google_api_key_here
-GEMINI_API_KEY=your_google_api_key_here
+# Google AI API Key
+GOOGLE_API_KEY=your_google_gemini_api_key_here
+GEMINI_API_KEY=your_google_gemini_api_key_here
 
-# Database
+# Pinecone Vector Store (Optional for Cloud RAG)
+PINECONE_API_KEY=your_pinecone_api_key_here
+PINECONE_ENVIRONMENT=us-west1-gcp-free
+
+# Database Configuration
 DATABASE_URL=sqlite:///./lumina.db
 
-# Optional: OpenAI
-OPENAI_API_KEY=your_openai_key_here
-OPENAI_MODEL=gpt-4
-
-# Authentication
-SECRET_KEY=your-secret-key-here
+# Authentication Security
+SECRET_KEY=your-jwt-secret-key-here
 ALGORITHM=HS256
 ```
 
-### Frontend Environment Variables
-
-Create `frontend/.env.local`:
+### Frontend Environment Variables (`frontend/.env.local`)
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXTAUTH_SECRET=your-nextauth-secret-here
+NEXTAUTH_URL=http://localhost:3000
 ```
 
 ---
 
-## 📁 Project Structure
+## 📁 Repository Structure
 
 ```
-lumina-ai-tutor/
+Lumina-AI-Tutor/
 ├── backend/
 │   ├── app/
-│   │   ├── api/          # API routes
-│   │   ├── models/       # Database models
-│   │   ├── services/     # Business logic
-│   │   ├── config.py     # Configuration
-│   │   └── main.py       # FastAPI app
-│   ├── requirements.txt
-│   └── .env
+│   │   ├── api/          # FastAPI REST Endpoints (Auth, Documents, Vector RAG, Quizzes)
+│   │   ├── models/       # SQLAlchemy Data Schemas
+│   │   ├── services/     # Socratic AI Engine & Pinecone Vector Store Retrieval
+│   │   ├── config.py     # Environment Configuration
+│   │   └── main.py       # Application Entrypoint
+│   ├── requirements.txt  # Python Dependencies
+│   └── .env.example
 ├── frontend/
-│   ├── app/              # Next.js app directory
-│   ├── components/       # React components
-│   ├── lib/              # Utilities
-│   ├── public/           # Static files
+│   ├── app/              # Next.js 14 App Router (pages, layout, favicons)
+│   ├── components/       # 25+ Glassmorphic React Components (Podcast, MultiDoc, Sprint, Quiz, Chat)
+│   ├── lib/              # Event Bus, Study Tracker, Auth, and XP Trigger Utilities
+│   ├── public/           # Static Brand SVG Favicons & Assets
 │   ├── package.json
-│   └── .env.local
+│   └── .env.example
 └── README.md
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
-### Frontend
-- **Framework**: Next.js 14 (React 18)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **State Management**: React Hooks
-- **API Client**: Axios
-- **Authentication**: NextAuth.js
-
-### Backend
-- **Framework**: FastAPI
-- **Language**: Python 3.11
-- **Database**: SQLite (development), PostgreSQL (production)
-- **AI Models**: Google Gemini, OpenAI GPT-4
-- **Vector Store**: Pinecone (optional)
-- **Authentication**: JWT
-
----
-
-## 📖 API Documentation
-
-Once the backend is running, visit:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
----
-
-## 🎯 Usage
-
-### 1. Upload a Document
-- Click "Upload" tab
-- Drag & drop or select a PDF
-- Wait for processing
-
-### 2. Start Learning
-- Click "Learn" tab
-- Use voice or text to ask questions
-- AI responds with explanations
-
-### 3. Take Quizzes
-- Click "Quiz" tab
-- Auto-generated questions based on your document
-- Get instant feedback
-
-### 4. Track Progress
-- View "Stats" for study statistics
-- Check "Analytics" for detailed insights
-- Monitor "Rewards" for achievements
-
-
+| Layer | Technologies Used |
+| :--- | :--- |
+| **Frontend** | Next.js 14 (React 18), TypeScript, Tailwind CSS, Lucide Icons, NextAuth.js |
+| **Backend** | FastAPI, Python 3.11, Pydantic, SQLAlchemy |
+| **AI Models & RAG** | Google Gemini API, Pinecone Vector Embeddings, Local CPU Vector Fallback Engine |
+| **Audio & Speech** | Web Speech API Text-to-Speech & Speech Recognition |
+| **State & Sync** | Custom Event Bus (`eventBus.ts`), Browser LocalStorage Registry |
+| **Deployment** | Vercel (Frontend), Uvicorn/Render (Backend) |
 
 ---
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-## 🙏 Acknowledgments
+## 📧 Contact & Links
 
-- **Google Gemini AI** for powerful language models
-- **OpenAI** for GPT models
-- **Next.js** team for the amazing framework
-- **FastAPI** for the fast and modern Python API framework
-
----
-
-## 📧 Contact
-
-Your Name - vaishnavithapekar@gmail.com
-
-Project Link: [https://github.com/VaishnaviThapekar/lumina-ai-tutor](https://github.com/VaishnaviThapekar/lumina-ai-tutor)
+- **Author**: Vaishnavi Thapekar — [vaishnavithapekar@gmail.com](mailto:vaishnavithapekar@gmail.com)
+- **Live Platform**: [lumina-ai-tutor.vercel.app](https://lumina-ai-tutor.vercel.app/)
+- **GitHub Repository**: [github.com/VaishnaviThapekar/Lumina-AI-Tutor](https://github.com/VaishnaviThapekar/Lumina-AI-Tutor)
 
 ---
 
-## 🌟 Star History
-
-If you find this project helpful, please consider giving it a ⭐!
-
-
-**Built with ❤️**
+**Built with ❤️ for adaptive, accessible learning worldwide.**

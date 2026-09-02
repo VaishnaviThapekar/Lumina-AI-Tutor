@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Brain, Network, Sparkles, BookOpen, Layers, CheckCircle2, ChevronRight, Zap, RefreshCw } from 'lucide-react';
+import { Brain, Network, Sparkles, BookOpen, Layers, CheckCircle2, ChevronRight, Zap, RefreshCw, Youtube } from 'lucide-react';
 import { getConceptMap, ConceptNode, ConceptMapData } from '@/lib/api';
 
 interface ConceptMapProps {
@@ -9,13 +9,15 @@ interface ConceptMapProps {
   documentTitle?: string;
   onNavigateToQuiz?: () => void;
   onNavigateToFlashcards?: () => void;
+  onNavigateToVideos?: () => void;
 }
 
 export default function ConceptMap({
   documentId,
   documentTitle,
   onNavigateToQuiz,
-  onNavigateToFlashcards
+  onNavigateToFlashcards,
+  onNavigateToVideos
 }: ConceptMapProps) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ConceptMapData | null>(null);
@@ -295,6 +297,14 @@ export default function ConceptMap({
                   >
                     <BookOpen className="w-4 h-4 text-purple-600" />
                     <span>Review Flashcards</span>
+                  </button>
+
+                  <button
+                    onClick={onNavigateToVideos}
+                    className="w-full py-2.5 px-4 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/40 rounded-xl font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
+                  >
+                    <Youtube className="w-4 h-4 text-red-600" />
+                    <span>Watch Related YouTube Tutorials</span>
                   </button>
                 </div>
               </div>

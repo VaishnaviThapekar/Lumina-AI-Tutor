@@ -23,6 +23,11 @@ import GamificationDashboard from '@/components/GamificationDashboard';
 import VoiceControls from '@/components/VoiceControls';
 import AIStudyPlanner from '@/components/AIStudyPlanner';
 import ConceptMap from '@/components/ConceptMap';
+import AIAudioPodcast from '@/components/AIAudioPodcast';
+import MultiDocWorkspace from '@/components/MultiDocWorkspace';
+import EssayEvaluator from '@/components/EssayEvaluator';
+import SpeedStudySprint from '@/components/SpeedStudySprint';
+import { Headphones, PenTool, Layers, Zap } from 'lucide-react';
 import { createSession, listDocuments, deleteDocument } from '@/lib/api';
 import type { Session, Document, UploadResponse } from '@/lib/types';
 import { getCurrentUser, logout } from '@/lib/auth';
@@ -32,7 +37,7 @@ export default function Dashboard() {
     const router = useRouter();
     const [currentSession, setCurrentSession] = useState<Session | null>(null);
     const [documents, setDocuments] = useState<Document[]>([]);
-    const [activeTab, setActiveTab] = useState<'chat' | 'quiz' | 'upload' | 'stats' | 'timer' | 'notes' | 'analytics' | 'social' | 'flashcards' | 'gamification' | 'planner' | 'concept-map'>('upload');
+    const [activeTab, setActiveTab] = useState<'chat' | 'quiz' | 'upload' | 'stats' | 'timer' | 'notes' | 'analytics' | 'social' | 'flashcards' | 'gamification' | 'planner' | 'concept-map' | 'podcast' | 'multidoc' | 'evaluator' | 'sprint'>('upload');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [previousScore, setPreviousScore] = useState<number | undefined>();
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -637,6 +642,58 @@ export default function Dashboard() {
                                         </div>
                                         <span className="text-sm">Concept Map</span>
                                     </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('podcast')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'podcast'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center">
+                                            <Headphones className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Podcast</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('multidoc')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'multidoc'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                                            <Layers className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Multi-Doc</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('evaluator')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'evaluator'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                                            <PenTool className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Essay Evaluator</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('sprint')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'sprint'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg flex items-center justify-center">
+                                            <Zap className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Speed Sprint</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -728,6 +785,27 @@ export default function Dashboard() {
                                         onNavigateToQuiz={() => setActiveTab('quiz')}
                                         onNavigateToFlashcards={() => setActiveTab('flashcards')}
                                     />
+                                </div>
+
+                                <div className={activeTab === 'podcast' ? 'block' : 'hidden'}>
+                                    <AIAudioPodcast
+                                        documentId={currentSession?.document_id}
+                                        documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
+                                    />
+                                </div>
+
+                                <div className={activeTab === 'multidoc' ? 'block' : 'hidden'}>
+                                    <MultiDocWorkspace onNavigateToChat={() => setActiveTab('chat')} />
+                                </div>
+
+                                <div className={activeTab === 'evaluator' ? 'block' : 'hidden'}>
+                                    <EssayEvaluator
+                                        documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
+                                    />
+                                </div>
+
+                                <div className={activeTab === 'sprint' ? 'block' : 'hidden'}>
+                                    <SpeedStudySprint />
                                 </div>
                             </div>
                         </div>

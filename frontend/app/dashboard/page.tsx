@@ -433,7 +433,7 @@ export default function Dashboard() {
                                         documents.map((doc) => (
                                             <div
                                                 key={doc.id}
-                                                className={`group flex items-center justify-between px-3.5 py-3 rounded-xl cursor-pointer transition-all ${
+                                                className={`group flex items-center justify-between px-3.5 py-3 rounded-xl cursor-pointer hover-lift animate-pop-in transition-all duration-300 ${
                                                     currentSession?.document_id === doc.id
                                                         ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg scale-[1.02]'
                                                         : 'bg-white/60 dark:bg-gray-900/40 hover:bg-purple-50 dark:hover:bg-gray-700/60 border border-gray-200/60 dark:border-gray-700/60 text-gray-700 dark:text-gray-300'

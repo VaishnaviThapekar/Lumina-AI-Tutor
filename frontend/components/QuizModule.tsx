@@ -218,6 +218,35 @@ const QuizModule: React.FC<QuizModuleProps> = ({
                     <p className="text-gray-600 dark:text-gray-400 mt-2 bg-white/50 dark:bg-gray-900/40 p-2.5 rounded-xl text-[11px] leading-relaxed">
                       💡 {item.feedback}
                     </p>
+
+                    {!item.is_correct && (
+                      <button
+                        onClick={() => {
+                          if (typeof window === 'undefined') return;
+                          try {
+                            const raw = localStorage.getItem('lumina_flashcards');
+                            const cards = raw ? JSON.parse(raw) : [];
+                            const newCard = {
+                              id: Date.now(),
+                              front: `Q: ${item.question}`,
+                              back: `Answer: ${item.correct_answer}\n\nRationale: ${item.feedback}`,
+                              interval: 1,
+                              easeFactor: 2.5,
+                              repetitions: 0
+                            };
+                            cards.unshift(newCard);
+                            localStorage.setItem('lumina_flashcards', JSON.stringify(cards));
+                            alert('🧠 Flashcard saved to Smart Flashcards tab!');
+                            notifyLuminaDataUpdated();
+                          } catch (e) {
+                            console.error('Error saving flashcard from quiz:', e);
+                          }
+                        }}
+                        className="mt-2.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span>🧠 Turn Mistake into Flashcard</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -225,12 +254,20 @@ const QuizModule: React.FC<QuizModuleProps> = ({
           ))}
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-full py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold shadow-lg transition-all"
-        >
-          Continue Learning
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setQuiz(null)}
+            className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-bold text-xs transition-all"
+          >
+            Take Another Quiz
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold text-xs shadow-lg transition-all"
+          >
+            Continue Learning
+          </button>
+        </div>
       </div>
     );
   }

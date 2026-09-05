@@ -33,6 +33,30 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
     const [speakResponses, setSpeakResponses] = useState(true);
     const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
     const [savedSessions, setSavedSessions] = useState<ChatSessionEntry[]>([]);
+    const [socraticDepth, setSocraticDepth] = useState<'ELI5' | 'Standard' | 'Academic'>('Standard');
+    const [savedNoteToast, setSavedNoteToast] = useState(false);
+
+    const handleSaveAsNote = (content: string) => {
+        if (typeof window === 'undefined') return;
+        try {
+            const existingRaw = localStorage.getItem('lumina_notes');
+            const existing = existingRaw ? JSON.parse(existingRaw) : [];
+            const newNote = {
+                id: Date.now(),
+                title: `AI Citation Note (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`,
+                content: content,
+                tags: ['Socratic AI', socraticDepth],
+                date: new Date().toISOString()
+            };
+            existing.unshift(newNote);
+            localStorage.setItem('lumina_notes', JSON.stringify(existing));
+            setSavedNoteToast(true);
+            setTimeout(() => setSavedNoteToast(false), 3000);
+            notifyLuminaDataUpdated();
+        } catch (e) {
+            console.error('Error saving note:', e);
+        }
+    };
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -312,17 +336,37 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                             <span>Saved Chats ({savedSessions.length})</span>
                         </button>
 
-                        <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/20">
-                            <span className="text-xs font-semibold text-purple-100">🔊 Voice AI Response</span>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={speakResponses}
-                                    onChange={(e) => setSpeakResponses(e.target.checked)}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-9 h-5 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-400"></div>
-                            </label>
+                        <div className="flex items-center gap-4 text-xs font-semibold">
+                            {/* Explanation Depth Selector */}
+                            <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-xl border border-white/30">
+                                <span className="text-[10px] text-purple-200 px-1 font-bold">Depth:</span>
+                                {['ELI5', 'Standard', 'Academic'].map((level) => (
+                                    <button
+                                        key={level}
+                                        onClick={() => setSocraticDepth(level as any)}
+                                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                                            socraticDepth === level
+                                                ? 'bg-white text-purple-700 shadow-sm'
+                                                : 'text-white hover:bg-white/10'
+                                        }`}
+                                    >
+                                        {level}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <span className="text-purple-100">Voice AI Speech</span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={speakResponses}
+                                        onChange={(e) => setSpeakResponses(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-400"></div>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -450,6 +494,24 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                                 }`}
                             >
                                 <p className="text-xs sm:text-sm whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+                                
+                                {message.role === 'assistant' && (
+                                    <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between gap-2 text-[10px]">
+                                        <div className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-semibold bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-md border border-purple-100 dark:border-purple-900/40">
+                                            <BookOpen className="w-3 h-3" />
+                                            <span>RAG Cited Source Grounded</span>
+                                        </div>
+
+                                        <button
+                                            onClick={() => handleSaveAsNote(message.content)}
+                                            className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 hover:bg-purple-100 dark:hover:bg-purple-900 text-gray-700 dark:text-gray-300 rounded-md font-bold transition-all flex items-center gap-1"
+                                            title="Save response to Note Taking System"
+                                        >
+                                            <span>📝 Save as Note</span>
+                                        </button>
+                                    </div>
+                                )}
+
                                 <p
                                     className={`text-[10px] mt-1.5 text-right ${
                                         message.role === 'user' ? 'text-purple-200' : 'text-gray-400 dark:text-gray-500'

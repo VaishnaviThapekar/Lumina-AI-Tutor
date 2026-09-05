@@ -23,6 +23,15 @@ export default function ConceptMap({
   const [data, setData] = useState<ConceptMapData | null>(null);
   const [selectedNode, setSelectedNode] = useState<ConceptNode | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('All');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  const filteredNodes = data?.nodes
+    ? data.nodes.filter(n => {
+        const matchesCat = filterCategory === 'All' || n.category === filterCategory;
+        const matchesSearch = !searchTerm.trim() || n.label.toLowerCase().includes(searchTerm.toLowerCase()) || n.description.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCat && matchesSearch;
+      })
+    : [];
 
   useEffect(() => {
     if (documentId) {
@@ -99,12 +108,6 @@ export default function ConceptMap({
     ? ['All', ...Array.from(new Set(data.nodes.map(n => n.category)))]
     : ['All'];
 
-  const filteredNodes = data
-    ? filterCategory === 'All'
-      ? data.nodes
-      : data.nodes.filter(n => n.category === filterCategory)
-    : [];
-
   const getMasteryBadge = (score: number) => {
     if (score >= 0.8) return { label: 'Mastered', color: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
     if (score >= 0.5) return { label: 'Developing', color: 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30' };
@@ -150,24 +153,34 @@ export default function ConceptMap({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Graph & Category List (Col 2) */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Category Filters */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-              Filter:
-            </span>
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setFilterCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap border ${
-                  filterCategory === cat
-                    ? 'bg-purple-600 text-white border-purple-600 shadow-md'
-                    : 'bg-white/60 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          {/* Search & Category Filters */}
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="🔍 Search concept nodes by title or keyword..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+            />
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                Filter:
+              </span>
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setFilterCategory(cat)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap border ${
+                    filterCategory === cat
+                      ? 'bg-purple-600 text-white border-purple-600 shadow-md'
+                      : 'bg-white/60 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Node Grid Visualization */}

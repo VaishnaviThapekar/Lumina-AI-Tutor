@@ -20,6 +20,62 @@ export default function PomodoroTimer() {
   const [isRunning, setIsRunning] = useState(false);
   const [pomodorosCompleted, setPomodorosCompleted] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [ambientSound, setAmbientSound] = useState<'off' | 'rain' | 'lofi' | 'white'>('off');
+
+  // Web Audio Synthesizer for Ambient Study Sounds
+  useEffect(() => {
+    if (ambientSound === 'off' || typeof window === 'undefined') return;
+
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+
+      let gainNode = ctx.createGain();
+      gainNode.gain.setValueAtTime(0.08, ctx.currentTime);
+      gainNode.connect(ctx.destination);
+
+      if (ambientSound === 'rain' || ambientSound === 'white') {
+        const bufferSize = ctx.sampleRate * 2;
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+
+        const whiteNoise = ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        if (ambientSound === 'rain') {
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(800, ctx.currentTime);
+          whiteNoise.connect(filter);
+          filter.connect(gainNode);
+        } else {
+          whiteNoise.connect(gainNode);
+        }
+
+        whiteNoise.start();
+        return () => {
+          whiteNoise.stop();
+          ctx.close();
+        };
+      } else if (ambientSound === 'lofi') {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, ctx.currentTime); // A3 note
+        osc.connect(gainNode);
+        osc.start();
+
+        return () => {
+          osc.stop();
+          ctx.close();
+        };
+      }
+    } catch (e) {}
+  }, [ambientSound]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -226,6 +282,33 @@ export default function PomodoroTimer() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Ambient Study Sounds Synthesizer Selector */}
+      <div className="flex flex-col items-center gap-2 mb-6">
+        <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          🎧 Focus Ambient Audio
+        </span>
+        <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 p-1.5 rounded-2xl border border-gray-200/60 dark:border-gray-700/60">
+          {[
+            { id: 'off', label: '🔇 Off' },
+            { id: 'rain', label: '🌧️ Soft Rain' },
+            { id: 'lofi', label: '🎵 Lo-Fi Synth' },
+            { id: 'white', label: '🌊 White Noise' }
+          ].map((snd) => (
+            <button
+              key={snd.id}
+              onClick={() => setAmbientSound(snd.id as any)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                ambientSound === snd.id
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm scale-105'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              {snd.label}
+            </button>
+          ))}
         </div>
       </div>
 

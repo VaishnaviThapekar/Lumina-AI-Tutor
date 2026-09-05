@@ -856,6 +856,18 @@ export default function Dashboard() {
                                         documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
                                     />
                                 </div>
+
+                                <div className={activeTab === 'agent-debate' ? 'block animate-fade-in-slide-up' : 'hidden'}>
+                                    <MultiAgentDebate
+                                        documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
+                                    />
+                                </div>
+
+                                <div className={activeTab === 'vector-space' ? 'block animate-fade-in-slide-up' : 'hidden'}>
+                                    <VectorEmbeddingSpace
+                                        documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </main>

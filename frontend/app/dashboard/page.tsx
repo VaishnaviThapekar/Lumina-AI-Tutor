@@ -29,7 +29,8 @@ import EssayEvaluator from '@/components/EssayEvaluator';
 import SpeedStudySprint from '@/components/SpeedStudySprint';
 import YouTubeRecommendations from '@/components/YouTubeRecommendations';
 import MultiAgentDebate from '@/components/MultiAgentDebate';
-import { Headphones, PenTool, Layers, Zap, Youtube } from 'lucide-react';
+import VectorEmbeddingSpace from '@/components/VectorEmbeddingSpace';
+import { Headphones, PenTool, Layers, Zap, Youtube, Compass } from 'lucide-react';
 import { createSession, listDocuments, deleteDocument } from '@/lib/api';
 import type { Session, Document, UploadResponse } from '@/lib/types';
 import { getCurrentUser, logout } from '@/lib/auth';
@@ -39,7 +40,7 @@ export default function Dashboard() {
     const router = useRouter();
     const [currentSession, setCurrentSession] = useState<Session | null>(null);
     const [documents, setDocuments] = useState<Document[]>([]);
-    const [activeTab, setActiveTab] = useState<'chat' | 'quiz' | 'upload' | 'stats' | 'timer' | 'notes' | 'analytics' | 'social' | 'flashcards' | 'gamification' | 'planner' | 'concept-map' | 'podcast' | 'multidoc' | 'evaluator' | 'sprint' | 'videos' | 'agent-debate'>('upload');
+    const [activeTab, setActiveTab] = useState<'chat' | 'quiz' | 'upload' | 'stats' | 'timer' | 'notes' | 'analytics' | 'social' | 'flashcards' | 'gamification' | 'planner' | 'concept-map' | 'podcast' | 'multidoc' | 'evaluator' | 'sprint' | 'videos' | 'agent-debate' | 'vector-space'>('upload');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [previousScore, setPreviousScore] = useState<number | undefined>();
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -721,6 +722,19 @@ export default function Dashboard() {
                                             <Users className="w-3 h-3 text-white" />
                                         </div>
                                         <span className="text-sm">AI Debate Panel</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('vector-space')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'vector-space'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-lg flex items-center justify-center">
+                                            <Compass className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">3D Vector Space</span>
                                     </button>
                                 </div>
                             </div>

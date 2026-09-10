@@ -7,6 +7,7 @@ import { generateQuiz, submitQuiz } from '@/lib/api';
 import { addQuizResult } from '@/lib/studyTracker';
 import { awardXPForQuiz } from '@/lib/xpTriggers';
 import { notifyLuminaDataUpdated } from '@/lib/eventBus';
+import { safeJsonParse } from '@/lib/auth';
 
 interface QuizModuleProps {
   sessionId: number;
@@ -29,27 +30,31 @@ const QuizModule: React.FC<QuizModuleProps> = ({
   const [result, setResult] = useState<QuizResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Restore active quiz state from localStorage on mount/document switch
+  // Restore active quiz state from localStorage safely on mount/document switch
   React.useEffect(() => {
     if (typeof window === 'undefined' || !documentId) return;
     const cacheKey = `lumina_quiz_state_${documentId}`;
     const saved = localStorage.getItem(cacheKey);
     if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
+      const parsed = safeJsonParse<any>(saved, null);
+      if (parsed) {
         if (parsed.quiz) setQuiz(parsed.quiz);
         if (parsed.currentQuestion !== undefined) setCurrentQuestion(parsed.currentQuestion);
         if (parsed.selectedAnswers) setSelectedAnswers(parsed.selectedAnswers);
         if (parsed.result) setResult(parsed.result);
-      } catch (e) {}
+      }
     }
   }, [documentId]);
 
-  // Persist active quiz state to localStorage whenever state changes
+  // Persist active quiz state safely to localStorage
   React.useEffect(() => {
     if (typeof window !== 'undefined' && documentId && quiz) {
       const cacheKey = `lumina_quiz_state_${documentId}`;
-      localStorage.setItem(cacheKey, JSON.stringify({ quiz, currentQuestion, selectedAnswers, result }));
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ quiz, currentQuestion, selectedAnswers, result }));
+      } catch (e) {
+        console.warn('Could not cache quiz state', e);
+      }
     }
   }, [quiz, currentQuestion, selectedAnswers, result, documentId]);
   
@@ -60,6 +65,7 @@ const QuizModule: React.FC<QuizModuleProps> = ({
       const quizData = await generateQuiz(documentId, numQuestions, difficulty);
       setQuiz(quizData);
       setSelectedAnswers(new Array(quizData.questions.length).fill(-1));
+      setResult(null);
     } catch (error) {
       console.error('Error generating quiz:', error);
       alert('Failed to generate quiz. Please try again.');
@@ -86,8 +92,8 @@ const QuizModule: React.FC<QuizModuleProps> = ({
       setResult(quizResult);
       onCompetencyUpdate(quizResult.updated_competency_score);
 
-      // Track quiz result, award XP, and trigger live tab sync
-      const scorePct = Math.round((quizResult.score / quizResult.total_questions) * 100);
+      // Fix: Backend returns normalized score (0.0 to 1.0). Displayed and awarded percentage is score * 100
+      const scorePct = Math.round(quizResult.score * 100);
       addQuizResult(scorePct);
       awardXPForQuiz(scorePct);
       notifyLuminaDataUpdated();
@@ -225,7 +231,7 @@ const QuizModule: React.FC<QuizModuleProps> = ({
                           if (typeof window === 'undefined') return;
                           try {
                             const raw = localStorage.getItem('lumina_flashcards');
-                            const cards = raw ? JSON.parse(raw) : [];
+                            const cards = safeJsonParse<any[]>(raw, []);
                             const newCard = {
                               id: Date.now(),
                               front: `Q: ${item.question}`,
@@ -256,7 +262,10 @@ const QuizModule: React.FC<QuizModuleProps> = ({
 
         <div className="flex gap-3">
           <button
-            onClick={() => setQuiz(null)}
+            onClick={() => {
+              setQuiz(null);
+              setResult(null);
+            }}
             className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-bold text-xs transition-all"
           >
             Take Another Quiz

@@ -2,37 +2,42 @@
 // Automatic XP triggers for existing features
 
 import { trackAction } from './gamification';
-import { getCurrentUser } from './auth';
+import { getCurrentUser, safeJsonParse } from './auth';
 
-// Toast notification system
+// Toast notification system with safe DOM creation (XSS prevention)
 export const showXPToast = (xp: number, reason: string, levelUp?: boolean) => {
-    // Create toast element
+    if (typeof document === 'undefined') return;
+
     const toast = document.createElement('div');
     toast.className = `fixed top-20 right-4 z-50 animate-slide-in`;
 
-    toast.innerHTML = `
-    <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 min-w-[300px]">
-      ${levelUp ?
-            `<div class="text-3xl">🎉</div>` :
-            `<div class="text-2xl">✨</div>`
-        }
-      <div>
-        <div class="font-bold text-lg">
-          ${levelUp ? 'LEVEL UP!' : `+${xp} XP`}
-        </div>
-        <div class="text-sm opacity-90">${reason}</div>
-      </div>
-    </div>
-  `;
+    const container = document.createElement('div');
+    container.className = "bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 min-w-[300px]";
 
+    const iconDiv = document.createElement('div');
+    iconDiv.className = levelUp ? "text-3xl" : "text-2xl";
+    iconDiv.textContent = levelUp ? '🎉' : '✨';
+    container.appendChild(iconDiv);
+
+    const textDiv = document.createElement('div');
+    const titleDiv = document.createElement('div');
+    titleDiv.className = "font-bold text-lg";
+    titleDiv.textContent = levelUp ? 'LEVEL UP!' : `+${xp} XP`;
+    textDiv.appendChild(titleDiv);
+
+    const reasonDiv = document.createElement('div');
+    reasonDiv.className = "text-sm opacity-90";
+    reasonDiv.textContent = reason;
+    textDiv.appendChild(reasonDiv);
+
+    container.appendChild(textDiv);
+    toast.appendChild(container);
     document.body.appendChild(toast);
 
-    // Trigger confetti if level up
     if (levelUp) {
         triggerConfetti();
     }
 
-    // Remove after 3 seconds
     setTimeout(() => {
         toast.style.animation = 'slide-out 0.3s ease-out';
         setTimeout(() => toast.remove(), 300);
@@ -41,6 +46,7 @@ export const showXPToast = (xp: number, reason: string, levelUp?: boolean) => {
 
 // Confetti animation
 export const triggerConfetti = () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
     const count = 50;
     const colors = ['#9333ea', '#ec4899', '#f59e0b', '#3b82f6', '#10b981'];
 
@@ -88,7 +94,6 @@ export const awardXPForUpload = () => {
     const result = trackAction(user.id, 'DOCUMENT_UPLOADED');
     showXPToast(result.xpAwarded, 'Document uploaded!', false);
 
-    // Check for achievements
     if (result.achievements.length > 0) {
         result.achievements.forEach(achievement => {
             setTimeout(() => {
@@ -124,9 +129,8 @@ export const awardXPForFlashcard = () => {
     if (!user) return;
 
     const result = trackAction(user.id, 'FLASHCARD_REVIEW');
-
-    // Only show toast every 5 flashcards to avoid spam
-    const progress = JSON.parse(localStorage.getItem(`lumina_gamification_${user.id}`) || '{}');
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(`lumina_gamification_${user.id}`) : null;
+    const progress = safeJsonParse<any>(raw, {});
     if (progress.stats?.flashcardsReviewed % 5 === 0) {
         showXPToast(result.xpAwarded * 5, '5 flashcards reviewed!', false);
     }
@@ -159,17 +163,16 @@ export const awardXPForChat = () => {
 // Check for level up
 export const checkLevelUp = () => {
     const user = getCurrentUser();
-    if (!user) return;
+    if (!user || typeof window === 'undefined') return;
 
     const storageKey = `lumina_gamification_${user.id}`;
     const oldData = localStorage.getItem(storageKey);
 
-    // Watch for level changes
     const observer = setInterval(() => {
         const newData = localStorage.getItem(storageKey);
         if (oldData !== newData && newData) {
-            const oldProgress = oldData ? JSON.parse(oldData) : { level: 1 };
-            const newProgress = JSON.parse(newData);
+            const oldProgress = safeJsonParse<any>(oldData, { level: 1 });
+            const newProgress = safeJsonParse<any>(newData, { level: 1 });
 
             if (newProgress.level > oldProgress.level) {
                 showXPToast(0, `Level ${newProgress.level}!`, true);
@@ -177,16 +180,14 @@ export const checkLevelUp = () => {
         }
     }, 1000);
 
-    // Clean up after 1 hour
     setTimeout(() => clearInterval(observer), 3600000);
 };
 
 // Initialize XP system
 export const initializeXPSystem = () => {
     const user = getCurrentUser();
-    if (!user) return;
+    if (!user || typeof window === 'undefined') return;
 
-    // Check for daily login
     const lastLogin = localStorage.getItem(`last_login_${user.id}`);
     const today = new Date().toDateString();
 
@@ -199,6 +200,5 @@ export const initializeXPSystem = () => {
         }, 1000);
     }
 
-    // Start level up checker
     checkLevelUp();
 };

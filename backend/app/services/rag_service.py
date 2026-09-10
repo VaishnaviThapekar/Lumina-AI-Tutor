@@ -1,5 +1,3 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from typing import List, Dict, Tuple
 import logging
 
@@ -23,8 +21,9 @@ class RAGService:
 
         if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "your_google_api_key_here":
             try:
+                from langchain_google_genai import ChatGoogleGenerativeAI
                 self.llm = ChatGoogleGenerativeAI(
-                    model="gemini-3.6-flash",
+                    model="gemini-1.5-flash",
                     google_api_key=settings.GEMINI_API_KEY,
                     temperature=0.7,
                     convert_system_message_to_human=True
@@ -62,6 +61,7 @@ class RAGService:
         # Step 5: Try generating response with LLM if available
         if self.llm:
             try:
+                from langchain_core.messages import HumanMessage, AIMessage
                 messages = []
                 if chat_history:
                     for msg in chat_history[-6:]:
@@ -102,21 +102,3 @@ class RAGService:
             context_parts.append(f"[Source {i}]:\n{chunk['text']}\n")
         
         return "\n".join(context_parts)
-    
-    def evaluate_response_quality(
-        self, 
-        student_response: str, 
-        expected_concepts: List[str]
-    ) -> float:
-        """
-        Evaluate student response quality (for future enhancement)
-        Returns score between 0 and 1
-        """
-        # Simple keyword matching - can be enhanced with semantic similarity
-        response_lower = student_response.lower()
-        matches = sum(1 for concept in expected_concepts if concept.lower() in response_lower)
-        
-        if not expected_concepts:
-            return 0.5
-        
-        return min(matches / len(expected_concepts), 1.0)

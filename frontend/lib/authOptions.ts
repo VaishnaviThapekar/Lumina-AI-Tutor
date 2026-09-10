@@ -19,34 +19,29 @@ export const authOptions: AuthOptions = {
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      // Allow all sign-ins
       return true;
     },
     async redirect({ url, baseUrl }) {
-      // Always redirect to dashboard after successful login
       if (url.startsWith(baseUrl)) {
         return `${baseUrl}/dashboard`;
       }
       return baseUrl + '/dashboard';
     },
     async session({ session, token }) {
-      // Add user info to session — pull name/email fresh from the token
-      // rather than leaving Next-Auth's defaults, since we explicitly
-      // refresh these on every sign-in in the jwt callback below.
       if (session.user) {
         (session.user as any).id = token.sub as string;
         if (token.name) session.user.name = token.name as string;
         if (token.email) session.user.email = token.email as string;
+        (session as any).provider = token.provider;
+        (session as any).providerToken = token.providerToken;
       }
       return session;
     },
-    async jwt({ token, user }) {
-      // `user` is only populated on a fresh sign-in (not on every request).
-      // If someone signs in with a DIFFERENT account while an old session
-      // is still active (i.e. they didn't log out first), we must
-      // explicitly overwrite name/email/id here — otherwise NextAuth
-      // silently keeps stale values from whichever account was cached
-      // first, regardless of which account they just signed in with.
+    async jwt({ token, user, account }) {
+      if (account) {
+        token.provider = account.provider;
+        token.providerToken = account.id_token || account.access_token || '';
+      }
       if (user) {
         token.id = user.id;
         token.name = user.name;
@@ -60,7 +55,7 @@ export const authOptions: AuthOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

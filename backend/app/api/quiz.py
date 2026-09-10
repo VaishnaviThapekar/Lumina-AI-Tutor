@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import json
 from datetime import datetime
+import logging
 
 from app.database import get_db, QuizAttempt, LearningSession, Document, User
 from app.schemas import (
@@ -9,37 +10,44 @@ from app.schemas import (
     QuizResponse, 
     QuizSubmission, 
     QuizResult,
-    QuizQuestion
+    QuizQuestionPublic,
+    QuizFeedbackItem
 )
 from app.services.quiz_generator import QuizGenerator
 from app.services.adaptive_engine import AdaptiveEngine
 from app.dependencies import get_current_user
+from app.utils.rate_limiter import rate_limit
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/quiz", tags=["quiz"])
 
 
-@router.post("/generate", response_model=QuizResponse)
+@router.post(
+    "/generate", 
+    response_model=QuizResponse,
+    dependencies=[Depends(rate_limit(max_requests=10, window_seconds=60))]
+)
 async def generate_quiz(
     request: QuizGenerateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Generate a quiz based on document content
-    
-    Process:
-    1. Retrieve document namespace
-    2. Use QuizGenerator to create questions from content
-    3. Return quiz with unique ID
+    Generate a quiz based on document content.
+    Enforces user ownership on the requested document and NEVER returns
+    answer keys or explanations before submission.
     """
-    
-    # Verify document exists
-    document = db.query(Document).filter(Document.id == request.document_id).first()
+    # Verify document exists AND belongs to the authenticated user (IDOR prevention)
+    document = db.query(Document).filter(
+        Document.id == request.document_id,
+        Document.user_id == current_user.id
+    ).first()
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     
     try:
-        # Generate quiz
+        # Generate quiz from document content
         quiz_generator = QuizGenerator()
         questions = quiz_generator.generate_quiz(
             namespace=document.pinecone_namespace,
@@ -47,11 +55,9 @@ async def generate_quiz(
             difficulty=request.difficulty or "mixed"
         )
         
-        # Create quiz attempt record (without answers yet)
+        # Save complete quiz data (with answers) securely in the database
         quiz_data = json.dumps(questions)
         
-        # For now, create a pending quiz attempt
-        # We'll update it when the user submits
         quiz_attempt = QuizAttempt(
             user_id=current_user.id,
             document_id=request.document_id,
@@ -59,6 +65,7 @@ async def generate_quiz(
             score=0.0,
             total_questions=len(questions),
             correct_answers=0,
+            submitted=False,
             attempted_at=datetime.utcnow()
         )
         
@@ -66,119 +73,124 @@ async def generate_quiz(
         db.commit()
         db.refresh(quiz_attempt)
         
-        # Format response (without correct answers and explanations)
-        quiz_questions = [
-            QuizQuestion(
+        # Format public response WITHOUT correct_answers or explanations
+        public_questions = [
+            QuizQuestionPublic(
                 question=q["question"],
-                options=q["options"],
-                correct_answer=q["correct_answer"],
-                explanation=q["explanation"]
+                options=q["options"]
             )
             for q in questions
         ]
         
         return QuizResponse(
             quiz_id=quiz_attempt.id,
-            questions=quiz_questions
+            questions=public_questions
         )
     
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        import traceback
-        print("=" * 80)
-        print("[QUIZ GENERATE ERROR]")
-        traceback.print_exc()
-        print("=" * 80)
-        raise HTTPException(status_code=500, detail=f"Error generating quiz: {str(e)}")
+        logger.error(f"[QUIZ GENERATE ERROR] {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error generating quiz. Please try again.")
 
 
-@router.post("/submit", response_model=QuizResult)
+@router.post(
+    "/submit", 
+    response_model=QuizResult,
+    dependencies=[Depends(rate_limit(max_requests=20, window_seconds=60))]
+)
 async def submit_quiz(
     submission: QuizSubmission,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Submit quiz answers and update competency score
-    
-    Process:
-    1. Retrieve quiz and answers
-    2. Grade the submission
-    3. Calculate new competency score
-    4. Update learning session
-    5. Save results
+    Submit quiz answers and update competency score.
+    Strictly validates ownership of both quiz attempt and learning session,
+    validates all answer indices, and protects against replay/double-reward attacks.
     """
-    
-    # Get quiz attempt
+    # 1. Verify quiz attempt ownership
     quiz_attempt = db.query(QuizAttempt).filter(
-        QuizAttempt.id == submission.quiz_id
+        QuizAttempt.id == submission.quiz_id,
+        QuizAttempt.user_id == current_user.id
     ).first()
     
-    if not quiz_attempt or quiz_attempt.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Quiz not found")
+    if not quiz_attempt:
+        raise HTTPException(status_code=404, detail="Quiz attempt not found")
     
-    # Get session
+    # 2. Verify learning session ownership (IDOR prevention)
     session = db.query(LearningSession).filter(
-        LearningSession.id == submission.session_id
+        LearningSession.id == submission.session_id,
+        LearningSession.user_id == current_user.id
     ).first()
     
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Learning session not found")
+    
+    # 3. Check replay attack
+    if quiz_attempt.submitted:
+        raise HTTPException(status_code=400, detail="This quiz has already been submitted.")
     
     try:
-        # Parse quiz questions
         questions = json.loads(quiz_attempt.quiz_data)
         
+        # 4. Validate answer count
         if len(submission.answers) != len(questions):
             raise HTTPException(
                 status_code=400, 
-                detail="Number of answers doesn't match number of questions"
+                detail=f"Expected {len(questions)} answers, but received {len(submission.answers)}."
             )
         
-        # Grade quiz
+        # 5. Validate answer index bounds for each question
         correct_count = 0
         feedback = []
+        adaptive_engine = AdaptiveEngine()
+        teaching_mode = adaptive_engine.determine_teaching_mode(session.competency_score)
         
         for i, (question, user_answer) in enumerate(zip(questions, submission.answers)):
-            is_correct = user_answer == question["correct_answer"]
+            num_options = len(question.get("options", []))
+            if not isinstance(user_answer, int) or user_answer < 0 or user_answer >= num_options:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid answer index {user_answer} for question {i + 1}."
+                )
+            
+            correct_idx = int(question["correct_answer"])
+            is_correct = (user_answer == correct_idx)
             if is_correct:
                 correct_count += 1
-            
-            # Get teaching mode for feedback formatting
-            adaptive_engine = AdaptiveEngine()
-            teaching_mode = adaptive_engine.determine_teaching_mode(session.competency_score)
             
             formatted_feedback = adaptive_engine.format_feedback(
                 is_correct=is_correct,
                 teaching_mode=teaching_mode,
-                explanation=question["explanation"]
+                explanation=question.get("explanation", "")
             )
             
-            feedback.append({
-                "question_number": i + 1,
-                "question": question["question"],
-                "user_answer": question["options"][user_answer],
-                "correct_answer": question["options"][question["correct_answer"]],
-                "is_correct": is_correct,
-                "feedback": formatted_feedback
-            })
+            feedback.append(QuizFeedbackItem(
+                question_number=i + 1,
+                question=question["question"],
+                user_answer=question["options"][user_answer],
+                correct_answer=question["options"][correct_idx],
+                is_correct=is_correct,
+                feedback=formatted_feedback
+            ))
         
-        # Calculate score
-        score = correct_count / len(questions)
+        # 6. Calculate normalized score (0.0 - 1.0)
+        score = correct_count / len(questions) if questions else 0.0
         
-        # Update quiz attempt
+        # 7. Update quiz attempt record
         quiz_attempt.score = score
         quiz_attempt.correct_answers = correct_count
+        quiz_attempt.submitted = True
         quiz_attempt.attempted_at = datetime.utcnow()
         
-        # Update competency score using adaptive engine
-        adaptive_engine = AdaptiveEngine()
+        # 8. Update competency score in session
         new_competency_score = adaptive_engine.update_competency_score(
             current_score=session.competency_score,
             quiz_performance=score,
-            weight=0.3  # 30% weight to new performance
+            weight=0.3
         )
-        
         session.competency_score = new_competency_score
         session.teaching_mode = adaptive_engine.determine_teaching_mode(new_competency_score)
         session.last_interaction = datetime.utcnow()
@@ -193,16 +205,16 @@ async def submit_quiz(
             feedback=feedback
         )
     
+    except HTTPException:
+        db.rollback()
+        raise
     except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="Error parsing quiz data")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Corrupted quiz data")
     except Exception as e:
         db.rollback()
-        import traceback
-        print("=" * 80)
-        print("[QUIZ SUBMIT ERROR]")
-        traceback.print_exc()
-        print("=" * 80)
-        raise HTTPException(status_code=500, detail=f"Error submitting quiz: {str(e)}")
+        logger.error(f"[QUIZ SUBMIT ERROR] {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error processing quiz submission")
 
 
 @router.get("/history")
@@ -211,15 +223,14 @@ async def get_quiz_history(
     db: Session = Depends(get_db)
 ):
     """Get quiz history for the authenticated user"""
-    
     attempts = db.query(QuizAttempt).filter(
-        QuizAttempt.user_id == current_user.id
+        QuizAttempt.user_id == current_user.id,
+        QuizAttempt.submitted == True
     ).order_by(QuizAttempt.attempted_at.desc()).all()
     
     history = []
     for attempt in attempts:
         document = db.query(Document).filter(Document.id == attempt.document_id).first()
-        
         history.append({
             "quiz_id": attempt.id,
             "document_name": document.filename if document else "Unknown",
@@ -238,12 +249,14 @@ async def review_quiz(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get detailed review of a completed quiz"""
+    """Get detailed review of a completed quiz owned by user"""
+    quiz_attempt = db.query(QuizAttempt).filter(
+        QuizAttempt.id == quiz_id,
+        QuizAttempt.user_id == current_user.id
+    ).first()
     
-    quiz_attempt = db.query(QuizAttempt).filter(QuizAttempt.id == quiz_id).first()
-    
-    if not quiz_attempt or quiz_attempt.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Quiz not found")
+    if not quiz_attempt or not quiz_attempt.submitted:
+        raise HTTPException(status_code=404, detail="Completed quiz not found")
     
     questions = json.loads(quiz_attempt.quiz_data)
     

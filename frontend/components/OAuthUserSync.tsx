@@ -5,15 +5,9 @@ import { useSession } from 'next-auth/react';
 import { getToken, getCurrentUser, syncOAuthSession } from '@/lib/auth';
 
 /**
- * When a user signs in via Google/GitHub, NextAuth creates its own session,
- * but our app's actual features (upload, chat, quiz, flashcards) all run
- * against the real FastAPI backend and require OUR JWT, not NextAuth's.
- *
- * This component watches for a NextAuth session and, if we don't already
- * have a backend token FOR THAT SAME ACCOUNT (someone may have switched
- * Google accounts while an old token was still stored), exchanges the
- * session for a real one by calling /api/auth/oauth-login. Mounted once
- * in the root layout so it runs on every page.
+ * When a user signs in via Google/GitHub, NextAuth creates its own session.
+ * This component securely exchanges the verified provider identity with
+ * the backend /api/auth/oauth-login endpoint.
  */
 export default function OAuthUserSync() {
   const { data: session, status } = useSession();
@@ -26,11 +20,14 @@ export default function OAuthUserSync() {
     const existingUser = getCurrentUser();
     const targetName = session.user.name || session.user.email.split('@')[0];
     if (getToken() && existingUser?.email === session.user.email && existingUser?.username === targetName) {
-      return; // already have a real token for this exact account with matching username
+      return; // already have a real token for this exact account
     }
 
+    const provider = (session as any).provider || 'google';
+    const providerToken = (session as any).providerToken || (session as any).id || '';
+
     setSyncing(true);
-    syncOAuthSession(session.user.email, session.user.name).finally(() => {
+    syncOAuthSession(provider, providerToken, session.user.name, session.user.email).finally(() => {
       setSyncing(false);
     });
   }, [status, session, syncing]);

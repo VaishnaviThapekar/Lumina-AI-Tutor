@@ -4,8 +4,6 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 from app.config import settings
 
-
-
 # Database engine
 # Render (and similar providers) give connection strings starting with
 # "postgres://", but SQLAlchemy 1.4+ requires the "postgresql://" scheme.
@@ -41,9 +39,12 @@ class User(Base):
     default_quiz_difficulty = Column(String, default="mixed")
     questions_per_quiz = Column(Integer, default=5)
     
-    # Relationships
-    sessions = relationship("LearningSession", back_populates="user")
-    quiz_attempts = relationship("QuizAttempt", back_populates="user")
+    # Relationships with cascade
+    sessions = relationship("LearningSession", back_populates="user", cascade="all, delete-orphan")
+    quiz_attempts = relationship("QuizAttempt", back_populates="user", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
+    flashcards = relationship("Flashcard", back_populates="user", cascade="all, delete-orphan")
+    reset_tokens = relationship("PasswordResetToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class Document(Base):
@@ -51,14 +52,16 @@ class Document(Base):
     __tablename__ = "documents"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     filename = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
     pinecone_namespace = Column(String, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
-    sessions = relationship("LearningSession", back_populates="document")
+    user = relationship("User", back_populates="documents")
+    sessions = relationship("LearningSession", back_populates="document", cascade="all, delete-orphan")
+    flashcards = relationship("Flashcard", back_populates="document", cascade="all, delete-orphan")
 
 
 class LearningSession(Base):
@@ -66,8 +69,8 @@ class LearningSession(Base):
     __tablename__ = "learning_sessions"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    document_id = Column(Integer, ForeignKey("documents.id"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     competency_score = Column(Float, default=0.5)  # Default to middle level
     teaching_mode = Column(String, default="balanced")  # scaffolding, balanced, socratic
     session_start = Column(DateTime, default=datetime.utcnow)
@@ -76,7 +79,7 @@ class LearningSession(Base):
     # Relationships
     user = relationship("User", back_populates="sessions")
     document = relationship("Document", back_populates="sessions")
-    messages = relationship("ChatMessage", back_populates="session")
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
 
 
 class ChatMessage(Base):
@@ -84,7 +87,7 @@ class ChatMessage(Base):
     __tablename__ = "chat_messages"
     
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("learning_sessions.id"))
+    session_id = Column(Integer, ForeignKey("learning_sessions.id", ondelete="CASCADE"), nullable=False)
     role = Column(String, nullable=False)  # user, assistant, system
     content = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
@@ -98,12 +101,13 @@ class QuizAttempt(Base):
     __tablename__ = "quiz_attempts"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    document_id = Column(Integer, ForeignKey("documents.id"))
-    quiz_data = Column(Text, nullable=False)  # JSON string
-    score = Column(Float, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    quiz_data = Column(Text, nullable=False)  # JSON string containing questions + answers internally
+    score = Column(Float, default=0.0, nullable=False)
     total_questions = Column(Integer, nullable=False)
-    correct_answers = Column(Integer, nullable=False)
+    correct_answers = Column(Integer, default=0, nullable=False)
+    submitted = Column(Boolean, default=False, nullable=False)
     attempted_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -115,8 +119,8 @@ class Flashcard(Base):
     __tablename__ = "flashcards"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     front = Column(Text, nullable=False)
     back = Column(Text, nullable=False)
 
@@ -129,8 +133,22 @@ class Flashcard(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User")
-    document = relationship("Document")
+    user = relationship("User", back_populates="flashcards")
+    document = relationship("Document", back_populates="flashcards")
+
+
+class PasswordResetToken(Base):
+    """Secure, persistent password reset tokens stored as hashes"""
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token_hash = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="reset_tokens")
 
 
 def get_db():
@@ -149,36 +167,44 @@ def create_tables():
 
 def run_lightweight_migrations():
     """
-    Add any newly-introduced columns to existing tables that already had
-    rows before the column existed. Base.metadata.create_all() only
-    creates missing TABLES, not missing COLUMNS on existing tables, so
-    this handles that gap without requiring a full Alembic setup.
-    Safe to run on every startup — each ALTER is skipped if the column
-    already exists.
+    Add any newly-introduced columns or tables to existing databases.
+    Safe to run on every startup.
     """
     from sqlalchemy import inspect, text
 
     inspector = inspect(engine)
-    if "users" not in inspector.get_table_names():
-        return  # create_tables() will have just created it fresh, fully up to date
+    existing_tables = set(inspector.get_table_names())
+    
+    # If users table exists, ensure all columns exist
+    if "users" in existing_tables:
+        existing_user_cols = {col["name"] for col in inspector.get_columns("users")}
+        new_columns = [
+            ("quiz_reminders", "BOOLEAN", "TRUE"),
+            ("progress_updates", "BOOLEAN", "TRUE"),
+            ("feature_announcements", "BOOLEAN", "FALSE"),
+            ("theme", "VARCHAR", "'light'"),
+            ("default_quiz_difficulty", "VARCHAR", "'mixed'"),
+            ("questions_per_quiz", "INTEGER", "5"),
+        ]
 
-    existing_columns = {col["name"] for col in inspector.get_columns("users")}
+        with engine.connect() as conn:
+            for name, col_type, default in new_columns:
+                if name not in existing_user_cols:
+                    conn.execute(text(
+                        f"ALTER TABLE users ADD COLUMN {name} {col_type} DEFAULT {default}"
+                    ))
+                    conn.commit()
+                    print(f"[migration] Added missing column users.{name}")
 
-    # (column_name, SQL type, default) — keep in sync with the User model above
-    new_columns = [
-        ("quiz_reminders", "BOOLEAN", "TRUE"),
-        ("progress_updates", "BOOLEAN", "TRUE"),
-        ("feature_announcements", "BOOLEAN", "FALSE"),
-        ("theme", "VARCHAR", "'light'"),
-        ("default_quiz_difficulty", "VARCHAR", "'mixed'"),
-        ("questions_per_quiz", "INTEGER", "5"),
-    ]
-
-    with engine.connect() as conn:
-        for name, col_type, default in new_columns:
-            if name not in existing_columns:
-                conn.execute(text(
-                    f"ALTER TABLE users ADD COLUMN {name} {col_type} DEFAULT {default}"
-                ))
+    if "quiz_attempts" in existing_tables:
+        existing_quiz_cols = {col["name"] for col in inspector.get_columns("quiz_attempts")}
+        if "submitted" not in existing_quiz_cols:
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE quiz_attempts ADD COLUMN submitted BOOLEAN DEFAULT FALSE"))
                 conn.commit()
-                print(f"[migration] Added missing column users.{name}")
+                print("[migration] Added missing column quiz_attempts.submitted")
+
+    # Ensure password_reset_tokens table exists
+    if "password_reset_tokens" not in existing_tables:
+        PasswordResetToken.__table__.create(bind=engine, checkfirst=True)
+        print("[migration] Created password_reset_tokens table")

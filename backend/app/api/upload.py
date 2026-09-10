@@ -1,9 +1,10 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pathlib import Path
 import uuid
+import re
 from datetime import datetime
-import traceback
+import logging
 
 from app.database import get_db, Document, User
 from app.schemas import DocumentUploadResponse
@@ -11,84 +12,116 @@ from app.services.vector_store import VectorStoreService
 from app.utils.pdf_processor import PDFProcessor
 from app.config import settings
 from app.dependencies import get_current_user
+from app.utils.rate_limiter import rate_limit
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
-# Create uploads directory - FIX: Use relative path for local development
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
 
+MAX_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
-@router.post("/", response_model=DocumentUploadResponse)
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize filename to prevent path traversal and unsafe characters"""
+    base_name = Path(filename).name
+    # Remove unsafe characters, keep alphanumeric, dots, underscores, dashes
+    clean_name = re.sub(r'[^a-zA-Z0-9._-]', '_', base_name)
+    return clean_name or "document.pdf"
+
+
+@router.post(
+    "/", 
+    response_model=DocumentUploadResponse,
+    dependencies=[Depends(rate_limit(max_requests=10, window_seconds=60))]
+)
 async def upload_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Upload a PDF document and process it for RAG
-    
-    Process:
-    1. Save PDF file
-    2. Extract text from PDF
-    3. Chunk text
-    4. Generate embeddings
-    5. Store in Pinecone
-    6. Save metadata in PostgreSQL
+    Upload a PDF document and process it for RAG with strict security validations:
+    - Size check (max 10MB)
+    - File magic signature validation (%PDF-)
+    - Filename sanitization
+    - Per-user document quota
     """
-    
+    # 1. Check user document quota
+    user_doc_count = db.query(Document).filter(Document.user_id == current_user.id).count()
+    if user_doc_count >= settings.MAX_DOCS_PER_USER:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Upload quota reached. Maximum {settings.MAX_DOCS_PER_USER} documents per account."
+        )
+
+    # 2. Check filename extension
+    if not file.filename or not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only PDF files are supported")
+
+    safe_original_name = sanitize_filename(file.filename)
+    file_uuid = uuid.uuid4().hex
+    stored_filename = f"{file_uuid}_{safe_original_name}"
+    file_path = UPLOAD_DIR / stored_filename
+
     try:
-        print(f"[UPLOAD] Starting upload for file: {file.filename}")
+        # 3. Stream read with size enforcement to avoid memory exhaustion
+        total_bytes = 0
+        content_chunks = []
         
-        # Validate file type
-        if not file.filename.endswith('.pdf'):
-            raise HTTPException(status_code=400, detail="Only PDF files are supported")
-        
-        # Generate unique filename
-        file_id = str(uuid.uuid4())
-        filename = f"{file_id}_{file.filename}"
-        file_path = UPLOAD_DIR / filename
-        
-        print(f"[UPLOAD] Saving file to: {file_path}")
-        
-        # Save file
-        content = await file.read()
+        while True:
+            chunk = await file.read(1024 * 64)  # 64KB chunk
+            if not chunk:
+                break
+            total_bytes += len(chunk)
+            if total_bytes > MAX_BYTES:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"File exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE_MB}MB"
+                )
+            content_chunks.append(chunk)
+
+        content = b"".join(content_chunks)
+
+        # 4. Verify PDF magic signature (%PDF-)
+        if not content.startswith(b"%PDF-"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file format. The uploaded file is not a valid PDF."
+            )
+
+        # Write safely to disk
         with open(file_path, "wb") as f:
             f.write(content)
-        
-        print(f"[UPLOAD] File saved successfully. Size: {len(content)} bytes")
-        
-        # Process PDF
+
+        # 5. Extract text from PDF
         pdf_processor = PDFProcessor(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP
         )
-        
-        print(f"[UPLOAD] Extracting text from PDF...")
-        
-        # Extract text
         text = pdf_processor.extract_text(str(file_path))
-        
-        if not text or len(text) < 100:
+
+        if not text or len(text.strip()) < 50:
+            if file_path.exists():
+                file_path.unlink()
             raise HTTPException(
-                status_code=400, 
-                detail="Could not extract sufficient text from PDF"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Could not extract sufficient readable text from this PDF."
             )
-        
-        print(f"[UPLOAD] Extracted {len(text)} characters from PDF")
-        
-        # Chunk text
+
+        # 6. Chunk text and cap chunks to prevent resource exhaustion
         chunks = pdf_processor.chunk_text(text)
-        
-        print(f"[UPLOAD] Created {len(chunks)} chunks")
-        
-        # Create namespace for this document
-        namespace = f"doc_{file_id}"
-        
-        # Create document record first to get ID
+        max_chunks = 200
+        if len(chunks) > max_chunks:
+            chunks = chunks[:max_chunks]
+
+        # 7. Create database record
+        namespace = f"doc_{file_uuid}"
         document = Document(
             user_id=current_user.id,
-            filename=file.filename,
+            filename=safe_original_name,
             file_path=str(file_path),
             pinecone_namespace=namespace,
             uploaded_at=datetime.utcnow()
@@ -96,48 +129,43 @@ async def upload_document(
         db.add(document)
         db.commit()
         db.refresh(document)
-        
-        print(f"[UPLOAD] Document record created with ID: {document.id}")
-        print(f"[UPLOAD] Storing vectors in Pinecone...")
-        
-        # Store in Pinecone
+
+        # 8. Store vectors
         vector_store = VectorStoreService()
-        
-        # Store vectors
         num_chunks = vector_store.store_document_chunks(
             chunks=chunks,
             namespace=namespace,
             document_id=document.id
         )
-        
-        print(f"[UPLOAD] Successfully stored {num_chunks} chunks in Pinecone")
-        
+
         return DocumentUploadResponse(
             id=document.id,
-            filename=file.filename,
+            filename=safe_original_name,
             pinecone_namespace=namespace,
             uploaded_at=document.uploaded_at,
             message=f"Successfully processed {num_chunks} chunks from document"
         )
-    
+
     except HTTPException:
-        # Re-raise HTTP exceptions as-is
-        raise
-    
-    except Exception as e:
-        # Log detailed error
-        print("=" * 80)
-        print("[UPLOAD ERROR] Exception occurred during upload:")
-        print(traceback.format_exc())
-        print("=" * 80)
-        
-        # Rollback database changes
         db.rollback()
-        
-        # Return detailed error message
+        if file_path.exists():
+            try:
+                file_path.unlink()
+            except Exception:
+                pass
+        raise
+
+    except Exception as e:
+        db.rollback()
+        if file_path.exists():
+            try:
+                file_path.unlink()
+            except Exception:
+                pass
+        logger.error(f"[UPLOAD ERROR] Failed to process upload: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=500, 
-            detail=f"Error processing document: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while processing the document. Please try again."
         )
 
 
@@ -146,7 +174,7 @@ async def list_documents(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """List all documents for the authenticated user"""
+    """List all documents owned by the authenticated user"""
     documents = db.query(Document).filter(Document.user_id == current_user.id).all()
     
     return {
@@ -168,7 +196,7 @@ async def delete_document(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a document and its vectors"""
+    """Delete a user-owned document and its vectors"""
     document = db.query(Document).filter(
         Document.id == document_id,
         Document.user_id == current_user.id
@@ -178,29 +206,28 @@ async def delete_document(
         raise HTTPException(status_code=404, detail="Document not found")
     
     try:
-        # Try to delete from Pinecone (but don't fail if it doesn't work)
+        # Delete vectors
         try:
             vector_store = VectorStoreService()
             vector_store.delete_namespace(document.pinecone_namespace)
-            print(f"[DELETE] Successfully deleted vectors from Pinecone")
         except Exception as pinecone_error:
-            print(f"[DELETE] Warning: Could not delete from Pinecone: {str(pinecone_error)}")
-            # Continue anyway - we can still delete from DB and filesystem
+            logger.warning(f"Could not delete vectors for {document.pinecone_namespace}: {str(pinecone_error)}")
         
-        # Delete file
+        # Delete file from filesystem
         file_path = Path(document.file_path)
         if file_path.exists():
-            file_path.unlink()
-            print(f"[DELETE] Deleted file: {file_path}")
+            try:
+                file_path.unlink()
+            except Exception as fe:
+                logger.warning(f"Could not delete file {file_path}: {str(fe)}")
         
-        # Delete from database
+        # Delete from DB
         db.delete(document)
         db.commit()
         
-        print(f"[DELETE] Successfully deleted document {document_id}")
         return {"message": "Document deleted successfully"}
     
     except Exception as e:
         db.rollback()
-        print(f"[DELETE] Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
+        logger.error(f"[DELETE ERROR] {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error deleting document")

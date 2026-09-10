@@ -1,24 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import List
+from typing import List, Optional
+import logging
 
 from app.database import get_db, Flashcard, Document, User
 from app.schemas import FlashcardGenerateRequest, FlashcardResponse, FlashcardReviewRequest
 from app.services.flashcard_generator import FlashcardGenerator
 from app.services.spaced_repetition import schedule_next_review
 from app.dependencies import get_current_user
+from app.utils.rate_limiter import rate_limit
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/flashcards", tags=["flashcards"])
 
 
-@router.post("/generate", response_model=List[FlashcardResponse])
+@router.post(
+    "/generate", 
+    response_model=List[FlashcardResponse],
+    dependencies=[Depends(rate_limit(max_requests=10, window_seconds=60))]
+)
 async def generate_flashcards(
     request: FlashcardGenerateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Generate a new batch of flashcards from a document's content."""
+    """Generate a new batch of flashcards from a user-owned document's content."""
     document = db.query(Document).filter(
         Document.id == request.document_id,
         Document.user_id == current_user.id
@@ -43,7 +51,7 @@ async def generate_flashcards(
                 ease_factor=2.5,
                 interval_days=0,
                 repetitions=0,
-                next_review_at=datetime.utcnow(),  # due immediately
+                next_review_at=datetime.utcnow(),
             )
             db.add(db_card)
             db_cards.append(db_card)
@@ -54,19 +62,23 @@ async def generate_flashcards(
 
         return db_cards
 
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error generating flashcards: {str(e)}")
+        logger.error(f"[FLASHCARD ERROR] {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error generating flashcards. Please try again.")
 
 
 @router.get("/due", response_model=List[FlashcardResponse])
 async def get_due_flashcards(
-    document_id: int = None,
+    document_id: Optional[int] = None,
     limit: int = 20,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get flashcards that are due for review right now (next_review_at <= now)."""
+    """Get flashcards owned by user that are due for review (next_review_at <= now)."""
+    limit = min(max(1, limit), 100)
     query = db.query(Flashcard).filter(
         Flashcard.user_id == current_user.id,
         Flashcard.next_review_at <= datetime.utcnow()
@@ -80,7 +92,7 @@ async def get_due_flashcards(
 
 @router.get("/all", response_model=List[FlashcardResponse])
 async def get_all_flashcards(
-    document_id: int = None,
+    document_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -98,9 +110,7 @@ async def review_flashcard(
     db: Session = Depends(get_db)
 ):
     """
-    Submit a review for a flashcard using SM-2 quality rating (0-5):
-    0-2 = forgot it, 3 = recalled with difficulty, 4 = recalled with hesitation,
-    5 = recalled perfectly. Updates the card's scheduling.
+    Submit a review for a user's flashcard using SM-2 quality rating (0-5).
     """
     card = db.query(Flashcard).filter(
         Flashcard.id == review.flashcard_id,
@@ -134,7 +144,7 @@ async def delete_flashcard(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a flashcard."""
+    """Delete a user-owned flashcard."""
     card = db.query(Flashcard).filter(
         Flashcard.id == flashcard_id,
         Flashcard.user_id == current_user.id

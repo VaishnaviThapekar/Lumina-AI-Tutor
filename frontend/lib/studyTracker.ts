@@ -1,5 +1,6 @@
 // lib/studyTracker.ts
 // Utility functions for tracking study statistics
+import { safeJsonParse } from './auth';
 
 export interface StudyStats {
   totalStudyTime: number;
@@ -40,11 +41,13 @@ export const getStats = (): StudyStats => {
   
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
-    const parsed = JSON.parse(saved);
-    if (!parsed.weeklyBreakdown) {
-      parsed.weeklyBreakdown = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+    const parsed = safeJsonParse<StudyStats | null>(saved, null);
+    if (parsed && typeof parsed === 'object') {
+      if (!parsed.weeklyBreakdown) {
+        parsed.weeklyBreakdown = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+      }
+      return parsed;
     }
-    return parsed;
   }
   return defaultStats;
 };
@@ -52,7 +55,11 @@ export const getStats = (): StudyStats => {
 // Save stats to localStorage
 export const saveStats = (stats: StudyStats): void => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+  } catch (e) {
+    console.warn('Could not save study stats to localStorage', e);
+  }
 };
 
 // Add study time
@@ -74,7 +81,7 @@ export const addStudyTime = (minutes: number): void => {
   stats.weeklyBreakdown[dayName] = (stats.weeklyBreakdown[dayName] || 0) + minutes;
   
   // Recalculate average session length
-  stats.averageSessionLength = Math.round(stats.totalStudyTime / stats.sessionsCompleted);
+  stats.averageSessionLength = Math.round(stats.totalStudyTime / Math.max(1, stats.sessionsCompleted));
   
   // Update streak
   if (stats.lastStudyDate !== today) {
@@ -134,6 +141,7 @@ export const resetWeeklyStats = (): void => {
 
 // Check if it's a new week and reset if needed
 export const checkAndResetWeek = (): void => {
+  if (typeof window === 'undefined') return;
   const lastReset = localStorage.getItem('lastWeekReset');
   const today = new Date();
   const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.

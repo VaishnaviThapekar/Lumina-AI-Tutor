@@ -1,7 +1,7 @@
 // lib/social.ts
 // Social features: friends, groups, leaderboards, sharing
 
-import { getCurrentUser, getAllUsers, User } from './auth';
+import { getCurrentUser, getAllUsers, User, safeJsonParse } from './auth';
 import { getStats } from './studyTracker';
 
 // ==================== TYPES ====================
@@ -65,7 +65,7 @@ export const getFriends = (): Friend[] => {
     if (!user) return [];
 
     const friendsData = localStorage.getItem(`${FRIENDS_KEY}_${user.id}`);
-    return friendsData ? JSON.parse(friendsData) : [];
+    return safeJsonParse<Friend[]>(friendsData, []);
 };
 
 const saveFriends = (friends: Friend[]): void => {
@@ -73,7 +73,11 @@ const saveFriends = (friends: Friend[]): void => {
     const user = getCurrentUser();
     if (!user) return;
 
-    localStorage.setItem(`${FRIENDS_KEY}_${user.id}`, JSON.stringify(friends));
+    try {
+        localStorage.setItem(`${FRIENDS_KEY}_${user.id}`, JSON.stringify(friends));
+    } catch (e) {
+        console.warn('Could not save friends to localStorage', e);
+    }
 };
 
 export const sendFriendRequest = (targetEmail: string): { success: boolean; error?: string } => {
@@ -107,8 +111,7 @@ export const sendFriendRequest = (targetEmail: string): { success: boolean; erro
     friends.push(newFriend);
     saveFriends(friends);
 
-    // Add to target user's friend requests (simulate backend)
-    const targetFriends = JSON.parse(localStorage.getItem(`${FRIENDS_KEY}_${targetUser.id}`) || '[]');
+    const targetFriends = safeJsonParse<any[]>(localStorage.getItem(`${FRIENDS_KEY}_${targetUser.id}`), []);
     targetFriends.push({
         userId: currentUser.id,
         username: currentUser.username,
@@ -116,7 +119,11 @@ export const sendFriendRequest = (targetEmail: string): { success: boolean; erro
         status: 'pending',
         addedAt: new Date().toISOString(),
     });
-    localStorage.setItem(`${FRIENDS_KEY}_${targetUser.id}`, JSON.stringify(targetFriends));
+    try {
+        localStorage.setItem(`${FRIENDS_KEY}_${targetUser.id}`, JSON.stringify(targetFriends));
+    } catch (e) {
+        console.warn('Could not save target friends', e);
+    }
 
     return { success: true };
 };
@@ -148,12 +155,16 @@ export const removeFriend = (userId: number): { success: boolean } => {
 export const getAllGroups = (): StudyGroup[] => {
     if (typeof window === 'undefined') return [];
     const groupsData = localStorage.getItem(GROUPS_KEY);
-    return groupsData ? JSON.parse(groupsData) : [];
+    return safeJsonParse<StudyGroup[]>(groupsData, []);
 };
 
 const saveGroups = (groups: StudyGroup[]): void => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+    try {
+        localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+    } catch (e) {
+        console.warn('Could not save groups to localStorage', e);
+    }
 };
 
 export const getMyGroups = (): StudyGroup[] => {
@@ -221,7 +232,6 @@ export const leaveGroup = (groupId: string): { success: boolean } => {
 
     groups[groupIndex].members = groups[groupIndex].members.filter(m => m !== user.id);
 
-    // Delete group if no members
     if (groups[groupIndex].members.length === 0) {
         groups.splice(groupIndex, 1);
     }
@@ -270,27 +280,23 @@ export const getLeaderboard = (): LeaderboardEntry[] => {
     const entries: LeaderboardEntry[] = [];
 
     allUsers.forEach(user => {
-        // Get stats for each user (in real app, this would be from backend)
         const statsKey = `studyStats_${user.id}`;
-        const userStats = localStorage.getItem(statsKey);
+        const userStats = typeof window !== 'undefined' ? localStorage.getItem(statsKey) : null;
 
         if (userStats) {
-            const stats = JSON.parse(userStats);
+            const stats = safeJsonParse<any>(userStats, {});
             entries.push({
                 userId: user.id,
                 username: user.username,
                 totalStudyTime: stats.totalStudyTime || 0,
                 currentStreak: stats.currentStreak || 0,
                 averageScore: stats.averageScore || 0,
-                rank: 0, // Will be set after sorting
+                rank: 0,
             });
         }
     });
 
-    // Sort by total study time
     entries.sort((a, b) => b.totalStudyTime - a.totalStudyTime);
-
-    // Assign ranks
     entries.forEach((entry, index) => {
         entry.rank = index + 1;
     });
@@ -313,14 +319,17 @@ export const getMyRank = (): number => {
 export const getActivityFeed = (): Activity[] => {
     if (typeof window === 'undefined') return [];
     const activitiesData = localStorage.getItem(ACTIVITIES_KEY);
-    return activitiesData ? JSON.parse(activitiesData) : [];
+    return safeJsonParse<Activity[]>(activitiesData, []);
 };
 
 const saveActivities = (activities: Activity[]): void => {
     if (typeof window === 'undefined') return;
-    // Keep only last 100 activities
     const limited = activities.slice(-100);
-    localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(limited));
+    try {
+        localStorage.setItem(ACTIVITIES_KEY, JSON.stringify(limited));
+    } catch (e) {
+        console.warn('Could not save activities to localStorage', e);
+    }
 };
 
 export const addActivity = (
@@ -372,8 +381,7 @@ export const shareDocument = (
         return { success: false, error: 'User not found' };
     }
 
-    // Store shared document
-    const sharedDocs = JSON.parse(localStorage.getItem(SHARED_DOCS_KEY) || '{}');
+    const sharedDocs = safeJsonParse<Record<string, any[]>>(localStorage.getItem(SHARED_DOCS_KEY), {});
     if (!sharedDocs[recipient.id]) {
         sharedDocs[recipient.id] = [];
     }
@@ -384,9 +392,12 @@ export const shareDocument = (
         sharedAt: new Date().toISOString(),
     });
 
-    localStorage.setItem(SHARED_DOCS_KEY, JSON.stringify(sharedDocs));
+    try {
+        localStorage.setItem(SHARED_DOCS_KEY, JSON.stringify(sharedDocs));
+    } catch (e) {
+        console.warn('Could not save shared documents', e);
+    }
 
-    // Add activity
     addActivity('document', `Shared "${documentTitle}" with ${recipient.username}`);
 
     return { success: true };
@@ -396,7 +407,7 @@ export const getSharedDocuments = (): any[] => {
     const user = getCurrentUser();
     if (!user) return [];
 
-    const sharedDocs = JSON.parse(localStorage.getItem(SHARED_DOCS_KEY) || '{}');
+    const sharedDocs = safeJsonParse<Record<string, any[]>>(localStorage.getItem(SHARED_DOCS_KEY), {});
     return sharedDocs[user.id] || [];
 };
 
@@ -411,11 +422,12 @@ export const compareWithFriend = (friendId: number): {
 
     const myStats = getStats();
     const friendStatsKey = `studyStats_${friendId}`;
-    const friendStatsData = localStorage.getItem(friendStatsKey);
+    const friendStatsData = typeof window !== 'undefined' ? localStorage.getItem(friendStatsKey) : null;
 
     if (!friendStatsData) return null;
 
-    const friendStats = JSON.parse(friendStatsData);
+    const friendStats = safeJsonParse<any>(friendStatsData, null);
+    if (!friendStats) return null;
 
     return {
         me: myStats,

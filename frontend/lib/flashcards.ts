@@ -1,5 +1,6 @@
 // lib/flashcards.ts
 // Flashcard generation and spaced repetition system
+import { safeJsonParse } from './auth';
 
 export interface Flashcard {
   id: string;
@@ -45,12 +46,16 @@ const SESSIONS_KEY = 'lumina_review_sessions';
 export const getAllFlashcards = (): Flashcard[] => {
   if (typeof window === 'undefined') return [];
   const data = localStorage.getItem(FLASHCARDS_KEY);
-  return data ? JSON.parse(data) : [];
+  return safeJsonParse<Flashcard[]>(data, []);
 };
 
 const saveFlashcards = (cards: Flashcard[]): void => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(FLASHCARDS_KEY, JSON.stringify(cards));
+  try {
+    localStorage.setItem(FLASHCARDS_KEY, JSON.stringify(cards));
+  } catch (e) {
+    console.warn('Could not save flashcards to localStorage', e);
+  }
 };
 
 export const createFlashcard = (
@@ -74,7 +79,7 @@ export const createFlashcard = (
     reviewCount: 0,
     successCount: 0,
     intervalDays: 1,
-    easeFactor: 2.5, // Default ease factor
+    easeFactor: 2.5,
   };
   
   cards.push(newCard);
@@ -123,18 +128,16 @@ export const deleteFlashcard = (id: string): void => {
 
 export const reviewFlashcard = (
   cardId: string,
-  quality: number // 0-5 rating (0=complete blackout, 5=perfect response)
+  quality: number
 ): void => {
   const cards = getAllFlashcards();
   const card = cards.find(c => c.id === cardId);
   
   if (!card) return;
   
-  // SM-2 Algorithm
   let { easeFactor, intervalDays } = card;
   
   if (quality >= 3) {
-    // Correct answer
     if (card.reviewCount === 0) {
       intervalDays = 1;
     } else if (card.reviewCount === 1) {
@@ -145,23 +148,18 @@ export const reviewFlashcard = (
     
     card.successCount++;
   } else {
-    // Incorrect answer - reset
     intervalDays = 1;
   }
   
-  // Update ease factor
   easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
   
-  // Ensure ease factor is at least 1.3
   if (easeFactor < 1.3) {
     easeFactor = 1.3;
   }
   
-  // Calculate next review date
   const nextReview = new Date();
   nextReview.setDate(nextReview.getDate() + intervalDays);
   
-  // Update card
   updateFlashcard(cardId, {
     lastReviewed: new Date().toISOString(),
     nextReview: nextReview.toISOString(),
@@ -197,12 +195,16 @@ export const getUpcomingReviews = (days: number = 7): Flashcard[] => {
 export const getAllDecks = (): FlashcardDeck[] => {
   if (typeof window === 'undefined') return [];
   const data = localStorage.getItem(DECKS_KEY);
-  return data ? JSON.parse(data) : [];
+  return safeJsonParse<FlashcardDeck[]>(data, []);
 };
 
 const saveDecks = (decks: FlashcardDeck[]): void => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(DECKS_KEY, JSON.stringify(decks));
+  try {
+    localStorage.setItem(DECKS_KEY, JSON.stringify(decks));
+  } catch (e) {
+    console.warn('Could not save decks to localStorage', e);
+  }
 };
 
 export const createDeck = (name: string, description: string): FlashcardDeck => {
@@ -282,23 +284,6 @@ export const getFlashcardStats = () => {
   };
 };
 
-// ==================== AI GENERATION (real, calls the backend) ====================
-
-// Kept for backward compatibility with any existing callers; now delegates
-// to real backend generation instead of returning hardcoded placeholder cards.
-export const generateFlashcardsFromText = async (
-  text: string,
-  count: number = 10
-): Promise<Array<{ front: string; back: string; difficulty: 'easy' | 'medium' | 'hard' }>> => {
-  console.warn(
-    'generateFlashcardsFromText is deprecated — use generateFlashcardsFromDocument(documentId, count) instead, which calls the real backend AI generator.'
-  );
-  return [];
-};
-
-// Calls the real backend, which uses your uploaded document's content (via RAG)
-// and an LLM to write flashcards, then saves them into local storage so they
-// show up immediately in the existing study/browse/stats UI.
 export const generateFlashcardsFromDocument = async (
   documentId: number,
   count: number = 10
@@ -322,8 +307,6 @@ export const generateFlashcardsFromDocument = async (
 
   const generated: Array<{ front: string; back: string }> = await response.json();
 
-  // Save into the existing local flashcard store (difficulty defaults to 'medium';
-  // the local SM-2 scheduler will adjust based on actual review performance)
   const cardsToCreate = generated.map((c) => ({
     front: c.front,
     back: c.back,

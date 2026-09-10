@@ -1,5 +1,6 @@
 // lib/gamification.ts
 // Gamification system with XP, levels, achievements, and rewards
+import { safeJsonParse } from './auth';
 
 export interface Achievement {
     id: string;
@@ -129,9 +130,29 @@ export const ACHIEVEMENTS: Achievement[] = [
 
 // Get user progress
 export const getUserProgress = (userId: number): UserProgress => {
+    if (typeof window === 'undefined') {
+        return {
+            userId,
+            xp: 0,
+            level: 1,
+            achievements: ACHIEVEMENTS.map(a => ({ ...a, progress: 0 })),
+            dailyStreak: 0,
+            lastActiveDate: new Date().toISOString(),
+            stats: {
+                totalStudyTime: 0,
+                quizzesCompleted: 0,
+                flashcardsReviewed: 0,
+                notesCreated: 0,
+                documentsRead: 0,
+            },
+        };
+    }
     const data = localStorage.getItem(`${STORAGE_KEY}_${userId}`);
     if (data) {
-        return JSON.parse(data);
+        const parsed = safeJsonParse<UserProgress | null>(data, null);
+        if (parsed && typeof parsed === 'object' && parsed.stats) {
+            return parsed;
+        }
     }
 
     // Initialize new user
@@ -154,7 +175,13 @@ export const getUserProgress = (userId: number): UserProgress => {
 
 // Save user progress
 export const saveUserProgress = (progress: UserProgress): void => {
-    localStorage.setItem(`${STORAGE_KEY}_${progress.userId}`, JSON.stringify(progress));
+    if (typeof window !== 'undefined') {
+        try {
+            localStorage.setItem(`${STORAGE_KEY}_${progress.userId}`, JSON.stringify(progress));
+        } catch (e) {
+            console.warn('Could not save user progress to localStorage', e);
+        }
+    }
 };
 
 // Calculate level from XP
@@ -315,20 +342,22 @@ export const trackAction = (
 
 // Get leaderboard
 export const getLeaderboard = (): Array<{ username: string; xp: number; level: number }> => {
+    if (typeof window === 'undefined') return [];
     const leaderboard: Array<{ username: string; xp: number; level: number }> = [];
 
-    // Get all users from localStorage
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key?.startsWith(STORAGE_KEY)) {
             const data = localStorage.getItem(key);
             if (data) {
-                const progress: UserProgress = JSON.parse(data);
-                leaderboard.push({
-                    username: `User ${progress.userId}`,
-                    xp: progress.xp,
-                    level: progress.level,
-                });
+                const progress = safeJsonParse<UserProgress | null>(data, null);
+                if (progress && progress.userId) {
+                    leaderboard.push({
+                        username: `User ${progress.userId}`,
+                        xp: progress.xp || 0,
+                        level: progress.level || 1,
+                    });
+                }
             }
         }
     }

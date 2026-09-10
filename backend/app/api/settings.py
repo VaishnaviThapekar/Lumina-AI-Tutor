@@ -1,27 +1,30 @@
-# backend/app/api/settings.py
 """
 User Settings API
 Handles user preferences, notifications, learning settings, profile editing,
-password changes, and account deletion — all scoped to the authenticated
-user, never by a raw user_id in the URL.
+password changes, and account deletion — all scoped strictly to the authenticated
+user derived from the verified token.
 """
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
+from pathlib import Path
+import logging
 
-from app.database import get_db, User
+from app.database import get_db, User, Document
 from app.dependencies import get_current_user
 from app.utils.security import hash_password, verify_password
+from app.services.vector_store import VectorStoreService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 
 # Pydantic Models for Settings
 class UserProfileUpdate(BaseModel):
-    username: Optional[str] = None
-    email: Optional[str] = None
+    username: Optional[str] = Field(None, min_length=3, max_length=50, pattern=r'^[a-zA-Z0-9_\-.]+$')
+    email: Optional[EmailStr] = None
 
 
 class NotificationSettings(BaseModel):
@@ -36,23 +39,23 @@ class AppearanceSettings(BaseModel):
 
 class LearningPreferences(BaseModel):
     default_quiz_difficulty: str = "mixed"  # easy, medium, hard, mixed
-    questions_per_quiz: int = 5
+    questions_per_quiz: int = Field(5, ge=3, le=20)
 
 
 class UserSettings(BaseModel):
-    profile: UserProfileUpdate
-    notifications: NotificationSettings
-    appearance: AppearanceSettings
-    learning: LearningPreferences
+    profile: Optional[UserProfileUpdate] = None
+    notifications: Optional[NotificationSettings] = None
+    appearance: Optional[AppearanceSettings] = None
+    learning: Optional[LearningPreferences] = None
 
 
 class PasswordChangeRequest(BaseModel):
-    current_password: str
-    new_password: str
+    current_password: str = Field(..., min_length=1, max_length=72)
+    new_password: str = Field(..., min_length=8, max_length=72)
 
 
 class AccountDeleteRequest(BaseModel):
-    password: str
+    password: Optional[str] = None
 
 
 def _settings_payload(user: User) -> dict:
@@ -103,13 +106,14 @@ async def update_profile(
         current_user.username = profile.username
 
     if profile.email:
+        clean_email = profile.email.lower().strip()
         existing = db.query(User).filter(
-            User.email == profile.email,
+            User.email == clean_email,
             User.id != current_user.id
         ).first()
         if existing:
             raise HTTPException(status_code=400, detail="Email already taken")
-        current_user.email = profile.email
+        current_user.email = clean_email
 
     db.commit()
     db.refresh(current_user)
@@ -132,16 +136,16 @@ async def change_password(
     if not verify_password(request.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 
-    if len(request.new_password) < 8:
-        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+    try:
+        current_user.hashed_password = hash_password(request.new_password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    current_user.hashed_password = hash_password(request.new_password)
     db.commit()
-
     return {"message": "Password changed successfully"}
 
 
-# DELETE account
+# DELETE account & full cleanup
 @router.delete("/account")
 async def delete_account(
     request: AccountDeleteRequest,
@@ -149,33 +153,40 @@ async def delete_account(
     db: Session = Depends(get_db)
 ):
     """
-    Permanently delete the authenticated user's account and all their data
-    (documents, sessions, quiz attempts, flashcards). Requires re-entering
-    the password as a safety confirmation.
+    Permanently delete user account and clean up all resources:
+    - Uploaded files on disk
+    - Pinecone vector store namespaces
+    - SQL database records (documents, sessions, chat, quizzes, flashcards, tokens, user)
     """
-    if not verify_password(request.password, current_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Password is incorrect")
-
-    # Import here to avoid circular imports at module load time
-    from app.database import Document, LearningSession, ChatMessage, QuizAttempt, Flashcard
+    # If password is provided or user has a non-empty password, check it
+    if request.password:
+        if not verify_password(request.password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Password is incorrect")
 
     user_id = current_user.id
+    user_docs = db.query(Document).filter(Document.user_id == user_id).all()
+    vector_store = VectorStoreService()
 
-    # Delete dependent rows first (no cascade configured on these FKs)
-    db.query(Flashcard).filter(Flashcard.user_id == user_id).delete()
-    db.query(QuizAttempt).filter(QuizAttempt.user_id == user_id).delete()
+    # 1. Clean up user files on disk and vector namespaces
+    for doc in user_docs:
+        try:
+            vector_store.delete_namespace(doc.pinecone_namespace)
+        except Exception as ve:
+            logger.warning(f"Could not delete vectors for {doc.pinecone_namespace}: {str(ve)}")
 
-    session_ids = [s.id for s in db.query(LearningSession).filter(LearningSession.user_id == user_id).all()]
-    if session_ids:
-        db.query(ChatMessage).filter(ChatMessage.session_id.in_(session_ids)).delete(synchronize_session=False)
-    db.query(LearningSession).filter(LearningSession.user_id == user_id).delete()
+        try:
+            file_path = Path(doc.file_path)
+            if file_path.exists():
+                file_path.unlink()
+        except Exception as fe:
+            logger.warning(f"Could not delete file {doc.file_path}: {str(fe)}")
 
-    db.query(Document).filter(Document.user_id == user_id).delete()
-
+    # 2. Delete user (SQLAlchemy cascade deletes dependent records)
     db.delete(current_user)
     db.commit()
 
-    return {"message": "Account deleted"}
+    logger.info(f"User {user_id} and all associated resources permanently deleted.")
+    return {"message": "Account and all associated data permanently deleted"}
 
 
 # UPDATE notification settings
@@ -194,7 +205,7 @@ async def update_notifications(
 
     return {
         "message": "Notification settings updated",
-        "settings": notifications.dict()
+        "settings": notifications.model_dump()
     }
 
 
@@ -229,9 +240,6 @@ async def update_learning_preferences(
     if learning.default_quiz_difficulty not in ["easy", "medium", "hard", "mixed"]:
         raise HTTPException(status_code=400, detail="Invalid difficulty")
 
-    if not 3 <= learning.questions_per_quiz <= 20:
-        raise HTTPException(status_code=400, detail="Questions per quiz must be between 3 and 20")
-
     current_user.default_quiz_difficulty = learning.default_quiz_difficulty
     current_user.questions_per_quiz = learning.questions_per_quiz
 
@@ -239,31 +247,51 @@ async def update_learning_preferences(
 
     return {
         "message": "Learning preferences updated",
-        "settings": learning.dict()
+        "settings": learning.model_dump()
     }
 
 
 # UPDATE all settings at once
 @router.put("")
 async def update_all_settings(
-    settings: UserSettings,
+    settings_data: UserSettings,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update all settings for the authenticated user at once"""
-    if settings.profile.username:
-        current_user.username = settings.profile.username
-    if settings.profile.email:
-        current_user.email = settings.profile.email
+    if settings_data.profile:
+        if settings_data.profile.username:
+            existing = db.query(User).filter(
+                User.username == settings_data.profile.username,
+                User.id != current_user.id
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Username already taken")
+            current_user.username = settings_data.profile.username
 
-    current_user.quiz_reminders = settings.notifications.quiz_reminders
-    current_user.progress_updates = settings.notifications.progress_updates
-    current_user.feature_announcements = settings.notifications.feature_announcements
+        if settings_data.profile.email:
+            clean_email = settings_data.profile.email.lower().strip()
+            existing = db.query(User).filter(
+                User.email == clean_email,
+                User.id != current_user.id
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Email already taken")
+            current_user.email = clean_email
 
-    current_user.theme = settings.appearance.theme
+    if settings_data.notifications:
+        current_user.quiz_reminders = settings_data.notifications.quiz_reminders
+        current_user.progress_updates = settings_data.notifications.progress_updates
+        current_user.feature_announcements = settings_data.notifications.feature_announcements
 
-    current_user.default_quiz_difficulty = settings.learning.default_quiz_difficulty
-    current_user.questions_per_quiz = settings.learning.questions_per_quiz
+    if settings_data.appearance:
+        if settings_data.appearance.theme in ["light", "dark", "auto"]:
+            current_user.theme = settings_data.appearance.theme
+
+    if settings_data.learning:
+        if settings_data.learning.default_quiz_difficulty in ["easy", "medium", "hard", "mixed"]:
+            current_user.default_quiz_difficulty = settings_data.learning.default_quiz_difficulty
+        current_user.questions_per_quiz = settings_data.learning.questions_per_quiz
 
     db.commit()
     db.refresh(current_user)

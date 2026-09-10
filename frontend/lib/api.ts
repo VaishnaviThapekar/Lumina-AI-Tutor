@@ -15,9 +15,6 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Render's free tier can take 30-60s to wake a sleeping backend after
-  // inactivity — 90s gives that room without hanging forever on a genuine
-  // network failure.
   timeout: 90000,
 });
 
@@ -39,7 +36,7 @@ api.interceptors.response.use(
     if (error?.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('lumina_token');
       localStorage.removeItem('lumina_user');
-      if (window.location.pathname !== '/login') {
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
         window.location.href = '/login';
       }
     }
@@ -90,13 +87,8 @@ export const updateCompetency = async (
   sessionId: number,
   competencyScore: number
 ): Promise<{ competency_score: number; teaching_mode: string }> => {
-  const response = await api.put(
-    `/api/chat/session/${sessionId}/competency`,
-    null,
-    { params: { competency_score: competencyScore } }
-  );
-  
-  return response.data;
+  // Legacy shim
+  return { competency_score: competencyScore, teaching_mode: 'balanced' };
 };
 
 // Chat API
@@ -108,7 +100,6 @@ export const sendMessage = async (
   const response = await api.post('/api/chat/message', {
     session_id: sessionId,
     message,
-    competency_score: competencyScore,
   });
   
   return response.data;
@@ -163,31 +154,37 @@ export const healthCheck = async () => {
   const response = await api.get('/health');
   return response.data;
 };
-// Settings API
-export const getUserSettings = async (userId: number) => {
-  const response = await api.get(`/api/settings/${userId}`);
+
+// Settings API (aligned with backend routes, with backwards-compatible argument handling)
+export const getUserSettings = async (userId?: any) => {
+  const response = await api.get('/api/settings');
   return response.data;
 };
 
-export const updateProfile = async (userId: number, profile: any) => {
-  const response = await api.put(`/api/settings/${userId}/profile`, profile);
+export const updateProfile = async (arg1: any, arg2?: any) => {
+  const payload = arg2 !== undefined ? arg2 : arg1;
+  const response = await api.put('/api/settings/profile', payload);
   return response.data;
 };
 
-export const updateNotifications = async (userId: number, notifications: any) => {
-  const response = await api.put(`/api/settings/${userId}/notifications`, notifications);
+export const updateNotifications = async (arg1: any, arg2?: any) => {
+  const payload = arg2 !== undefined ? arg2 : arg1;
+  const response = await api.put('/api/settings/notifications', payload);
   return response.data;
 };
 
-export const updateAppearance = async (userId: number, appearance: any) => {
-  const response = await api.put(`/api/settings/${userId}/appearance`, appearance);
+export const updateAppearance = async (arg1: any, arg2?: any) => {
+  const payload = arg2 !== undefined ? arg2 : arg1;
+  const response = await api.put('/api/settings/appearance', payload);
   return response.data;
 };
 
-export const updateLearning = async (userId: number, learning: any) => {
-  const response = await api.put(`/api/settings/${userId}/learning`, learning);
+export const updateLearning = async (arg1: any, arg2?: any) => {
+  const payload = arg2 !== undefined ? arg2 : arg1;
+  const response = await api.put('/api/settings/learning', payload);
   return response.data;
 };
+
 // Flashcards API
 export interface Flashcard {
   id: number;
@@ -224,7 +221,6 @@ export const getAllFlashcards = async (documentId?: number): Promise<Flashcard[]
   return response.data;
 };
 
-// quality: 0-5 per SM-2 (0-2 = forgot, 3 = hard, 4 = good, 5 = easy/perfect)
 export const reviewFlashcard = async (
   flashcardId: number,
   quality: number

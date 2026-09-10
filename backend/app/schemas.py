@@ -1,13 +1,13 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
 
 
 # User Schemas
 class UserCreate(BaseModel):
-    username: str
+    username: str = Field(..., min_length=3, max_length=50, pattern=r'^[a-zA-Z0-9_\-.]+$')
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=8, max_length=72)
 
 
 class UserResponse(BaseModel):
@@ -22,18 +22,29 @@ class UserResponse(BaseModel):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=1, max_length=72)
 
 
 class OAuthLoginRequest(BaseModel):
-    email: EmailStr
+    provider: str = Field(..., min_length=1)
+    token: str = Field(..., min_length=1)
     name: Optional[str] = None
+    email: Optional[EmailStr] = None
 
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=72)
 
 
 # Document Schemas
@@ -48,8 +59,7 @@ class DocumentUploadResponse(BaseModel):
 # Chat Schemas
 class ChatRequest(BaseModel):
     session_id: int
-    message: str
-    competency_score: Optional[float] = None
+    message: str = Field(..., min_length=1, max_length=4000)
 
 
 class ChatResponse(BaseModel):
@@ -60,6 +70,13 @@ class ChatResponse(BaseModel):
 
 
 # Quiz Schemas
+class QuizQuestionPublic(BaseModel):
+    """Public question model sent before submission - DOES NOT contain correct_answer or explanation"""
+    question: str
+    options: List[str]
+
+
+# Legacy internal representation for grading
 class QuizQuestion(BaseModel):
     question: str
     options: List[str]
@@ -69,19 +86,28 @@ class QuizQuestion(BaseModel):
 
 class QuizGenerateRequest(BaseModel):
     document_id: int
-    num_questions: int = 5
+    num_questions: int = Field(5, ge=1, le=20)
     difficulty: Optional[str] = "mixed"  # easy, medium, hard, mixed
 
 
 class QuizResponse(BaseModel):
     quiz_id: int
-    questions: List[QuizQuestion]
+    questions: List[QuizQuestionPublic]
 
 
 class QuizSubmission(BaseModel):
     quiz_id: int
     session_id: int
-    answers: List[int]  # List of selected option indices
+    answers: List[int]  # Selected option indices (0-3)
+
+
+class QuizFeedbackItem(BaseModel):
+    question_number: int
+    question: str
+    user_answer: str
+    correct_answer: str
+    is_correct: bool
+    feedback: str
 
 
 class QuizResult(BaseModel):
@@ -89,13 +115,12 @@ class QuizResult(BaseModel):
     correct_answers: int
     total_questions: int
     updated_competency_score: float
-    feedback: List[dict]
+    feedback: List[QuizFeedbackItem]
 
 
 # Session Schemas
 class SessionCreate(BaseModel):
     document_id: int
-    user_id: Optional[int] = None  # Deprecated: real user comes from the auth token now
 
 
 class SessionResponse(BaseModel):
@@ -113,7 +138,7 @@ class SessionResponse(BaseModel):
 # Flashcard Schemas
 class FlashcardGenerateRequest(BaseModel):
     document_id: int
-    num_cards: int = 10
+    num_cards: int = Field(10, ge=1, le=30)
 
 
 class FlashcardResponse(BaseModel):
@@ -131,7 +156,7 @@ class FlashcardResponse(BaseModel):
 
 class FlashcardReviewRequest(BaseModel):
     flashcard_id: int
-    quality: int  # 0-5, per SM-2 (0=blackout ... 5=perfect recall)
+    quality: int = Field(..., ge=0, le=5)  # 0-5 per SM-2
 
 
 # Message Schemas

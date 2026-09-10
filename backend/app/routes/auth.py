@@ -1,35 +1,59 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import secrets
 import hashlib
+import logging
 
-from app.database import get_db, User
+from app.database import get_db, User, PasswordResetToken
 from app.config import settings
-from app.schemas import UserCreate, UserLogin, UserResponse, TokenResponse, OAuthLoginRequest
-from app.utils.security import hash_password, verify_password, create_access_token
+from app.schemas import (
+    UserCreate, 
+    UserLogin, 
+    UserResponse, 
+    TokenResponse, 
+    OAuthLoginRequest,
+    PasswordResetRequest,
+    PasswordResetConfirm
+)
+from app.utils.security import (
+    hash_password, 
+    verify_password, 
+    create_access_token, 
+    verify_oauth_token
+)
+from app.utils.rate_limiter import rate_limit
 from app.dependencies import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Temporary storage for reset tokens (in production, use database / Redis)
-password_reset_tokens = {}
 
-
-@router.post("/api/auth/oauth-login", response_model=TokenResponse)
+@router.post(
+    "/api/auth/oauth-login", 
+    response_model=TokenResponse,
+    dependencies=[Depends(rate_limit(max_requests=15, window_seconds=60))]
+)
 async def oauth_login(request: OAuthLoginRequest, db: Session = Depends(get_db)):
     """
-    Issue a real backend JWT for a user who just signed in via an OAuth
-    provider (Google/GitHub) through NextAuth. Updates user name to match
-    Google profile name accurately.
+    Secure OAuth login: Verifies provider token before creating/logging in user.
+    Rejects raw unverified email inputs.
     """
-    user = db.query(User).filter(User.email == request.email).first()
-    desired_username = request.name or request.email.split("@")[0]
+    verified_data = await verify_oauth_token(request.provider, request.token)
+    if not verified_data or not verified_data.get("email"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or unverified OAuth token"
+        )
+
+    email = verified_data["email"].lower().strip()
+    user = db.query(User).filter(User.email == email).first()
+    desired_name = request.name or verified_data.get("name") or email.split("@")[0]
 
     if not user:
-        # New OAuth user: create an account with a unique username
-        username = desired_username
+        # Create user account with verified email
+        username = desired_name
         base_username = username
         counter = 1
         while db.query(User).filter(User.username == username).first():
@@ -38,16 +62,15 @@ async def oauth_login(request: OAuthLoginRequest, db: Session = Depends(get_db))
 
         user = User(
             username=username,
-            email=request.email,
+            email=email,
             hashed_password=hash_password(secrets.token_urlsafe(32)),
         )
         db.add(user)
         db.commit()
         db.refresh(user)
     else:
-        # Existing user logging in via OAuth: update username to match Google name if provided
+        # Existing user: update username if provided and available
         if request.name and user.username != request.name:
-            # Check if name is taken by a DIFFERENT user id
             conflict = db.query(User).filter(User.username == request.name, User.id != user.id).first()
             if not conflict:
                 user.username = request.name
@@ -58,20 +81,30 @@ async def oauth_login(request: OAuthLoginRequest, db: Session = Depends(get_db))
     return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
 
 
-@router.post("/api/auth/signup", response_model=TokenResponse)
+@router.post(
+    "/api/auth/signup", 
+    response_model=TokenResponse,
+    dependencies=[Depends(rate_limit(max_requests=10, window_seconds=60))]
+)
 async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     """Create a real user account in the database and return a JWT."""
+    email_clean = user_data.email.lower().strip()
     existing = db.query(User).filter(
-        (User.email == user_data.email) | (User.username == user_data.username)
+        (User.email == email_clean) | (User.username == user_data.username)
     ).first()
     if existing:
-        field = "email" if existing.email == user_data.email else "username"
+        field = "email" if existing.email == email_clean else "username"
         raise HTTPException(status_code=400, detail=f"That {field} is already registered")
+
+    try:
+        hashed = hash_password(user_data.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     user = User(
         username=user_data.username,
-        email=user_data.email,
-        hashed_password=hash_password(user_data.password),
+        email=email_clean,
+        hashed_password=hashed,
     )
     db.add(user)
     db.commit()
@@ -81,10 +114,15 @@ async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
 
 
-@router.post("/api/auth/login", response_model=TokenResponse)
+@router.post(
+    "/api/auth/login", 
+    response_model=TokenResponse,
+    dependencies=[Depends(rate_limit(max_requests=10, window_seconds=60))]
+)
 async def login(credentials: UserLogin, db: Session = Depends(get_db)):
     """Verify credentials against the database and return a JWT."""
-    user = db.query(User).filter(User.email == credentials.email).first()
+    email_clean = credentials.email.lower().strip()
+    user = db.query(User).filter(User.email == email_clean).first()
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
@@ -97,122 +135,106 @@ async def get_me(current_user: User = Depends(get_current_user)):
     """Return the currently authenticated user (validates the token)."""
     return current_user
 
-class PasswordResetRequest(BaseModel):
-    email: EmailStr
-
-class PasswordResetConfirm(BaseModel):
-    token: str
-    new_password: str
-
-def generate_reset_token(email: str) -> str:
-    """Generate a secure reset token"""
-    token = secrets.token_urlsafe(32)
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    
-    # Store token with expiration (1 hour)
-    password_reset_tokens[token_hash] = {
-        'email': email,
-        'expires_at': datetime.utcnow() + timedelta(hours=1),
-        'used': False
-    }
-    
-    return token
 
 def send_reset_email(email: str, token: str):
-    """Send password reset email (prints to console for now)"""
-    frontend_url = settings.ALLOWED_ORIGINS.split(",")[0].strip()
-    reset_link = f"{frontend_url}/reset-password?token={token}"
-    
-    print(f"""
-    ========================================
-    PASSWORD RESET EMAIL
-    ========================================
-    To: {email}
-    Subject: Reset Your Lumina Password
-    
-    Click the link below to reset your password:
-    {reset_link}
-    
-    This link expires in 1 hour.
-    ========================================
-    """)
+    """Send password reset email via configured frontend URL"""
+    reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?token={token}"
+    logger.info(f"Password reset link generated for {email}: {reset_link}")
 
-@router.post("/api/forgot-password")
+
+@router.post(
+    "/api/forgot-password",
+    dependencies=[Depends(rate_limit(max_requests=5, window_seconds=900))]
+)
 async def forgot_password(
     request: PasswordResetRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
 ):
-    """Request password reset"""
-    email = request.email
-    
-    # Generate reset token
-    token = generate_reset_token(email)
-    
-    # Send email in background
-    background_tasks.add_task(send_reset_email, email, token)
-    
+    """
+    Request password reset with persistent tokens and account enumeration protection.
+    """
+    email = request.email.lower().strip()
+    user = db.query(User).filter(User.email == email).first()
+
+    if user:
+        # Invalidate existing unused tokens for this user
+        db.query(PasswordResetToken).filter(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used == False
+        ).update({"used": True})
+
+        # Generate cryptographically secure token
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+        reset_record = PasswordResetToken(
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=datetime.utcnow() + timedelta(hours=1),
+            used=False
+        )
+        db.add(reset_record)
+        db.commit()
+
+        background_tasks.add_task(send_reset_email, email, raw_token)
+
     return {
         "success": True,
         "message": "If an account exists with this email, you will receive a password reset link."
     }
 
-@router.post("/api/reset-password")
-async def reset_password(request: PasswordResetConfirm, db: Session = Depends(get_db)):
-    """Reset password with token"""
-    token = request.token
-    new_password = request.new_password
-    
-    # Hash the token to match stored version
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    
-    # Check if token exists
-    if token_hash not in password_reset_tokens:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
-    
-    token_data = password_reset_tokens[token_hash]
-    
-    # Check if token is expired
-    if datetime.utcnow() > token_data['expires_at']:
-        del password_reset_tokens[token_hash]
-        raise HTTPException(status_code=400, detail="Token has expired")
-    
-    # Check if token was already used
-    if token_data['used']:
-        raise HTTPException(status_code=400, detail="Token has already been used")
-    
-    # Mark token as used
-    token_data['used'] = True
-    
-    email = token_data['email']
 
-    # Actually update the user's password in the database
-    user = db.query(User).filter(User.email == email).first()
+@router.post(
+    "/api/reset-password",
+    dependencies=[Depends(rate_limit(max_requests=5, window_seconds=900))]
+)
+async def reset_password(request: PasswordResetConfirm, db: Session = Depends(get_db)):
+    """Reset password with cryptographically validated persistent token"""
+    token_hash = hashlib.sha256(request.token.encode("utf-8")).hexdigest()
+
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token_hash == token_hash
+    ).first()
+
+    if not reset_token or reset_token.used:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    if datetime.utcnow() > reset_token.expires_at:
+        db.delete(reset_token)
+        db.commit()
+        raise HTTPException(status_code=400, detail="Token has expired")
+
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    user.hashed_password = hash_password(new_password)
+
+    try:
+        user.hashed_password = hash_password(request.new_password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    reset_token.used = True
     db.commit()
 
-    print(f"✅ Password reset successful for: {email}")
-    
     return {
         "success": True,
         "message": "Password has been reset successfully"
     }
 
+
 @router.get("/api/verify-reset-token/{token}")
-async def verify_reset_token(token: str):
-    """Verify if reset token is valid"""
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    
-    if token_hash not in password_reset_tokens:
-        raise HTTPException(status_code=400, detail="Invalid token")
-    
-    token_data = password_reset_tokens[token_hash]
-    
-    if datetime.utcnow() > token_data['expires_at']:
-        raise HTTPException(status_code=400, detail="Token expired")
-    
-    if token_data['used']:
-        raise HTTPException(status_code=400, detail="Token already used")
-    
-    return {"valid": True, "email": token_data['email']}
+async def verify_reset_token(token: str, db: Session = Depends(get_db)):
+    """Verify if reset token is valid without leaking user details"""
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token_hash == token_hash,
+        PasswordResetToken.used == False,
+        PasswordResetToken.expires_at > datetime.utcnow()
+    ).first()
+
+    if not reset_token:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    return {"valid": True}

@@ -114,23 +114,13 @@ def generate_reset_token(email: str) -> str:
     
     return token
 
+from app.services.email_service import send_password_reset_email
+from app.config import settings
+
 def send_reset_email(email: str, token: str):
-    """Send password reset email (prints to console for now)"""
-    reset_link = f"http://localhost:3000/reset-password?token={token}"
-    
-    print(f"""
-    ========================================
-    PASSWORD RESET EMAIL
-    ========================================
-    To: {email}
-    Subject: Reset Your Lumina Password
-    
-    Click the link below to reset your password:
-    {reset_link}
-    
-    This link expires in 1 hour.
-    ========================================
-    """)
+    """Send password reset email via configured email service (SMTP/Resend)"""
+    reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?token={token}"
+    send_password_reset_email(email, reset_link)
 
 @router.post("/api/forgot-password")
 async def forgot_password(

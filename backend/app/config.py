@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001"
     
+    # Email / SMTP Settings (Password Reset & Notifications)
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: Optional[str] = None
+    SMTP_FROM_NAME: str = "Lumina AI Tutor"
+    SMTP_TLS: bool = True
+    RESEND_API_KEY: Optional[str] = None
+
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000

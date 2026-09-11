@@ -192,7 +192,7 @@ export default function LoginPage() {
 
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      await axios.post(`${API_BASE_URL}/api/forgot-password`, { email: resetEmail });
+      await axios.post(`${API_BASE_URL}/api/forgot-password`, { email: resetEmail.trim().toLowerCase() });
     } catch (err) {
       // The backend intentionally returns success even for unknown emails
       // (to avoid leaking which emails are registered), so this rarely fires.

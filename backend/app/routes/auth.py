@@ -137,10 +137,12 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+from app.services.email_service import send_password_reset_email
+
 def send_reset_email(email: str, token: str):
-    """Send password reset email via configured frontend URL"""
+    """Send password reset email via configured email service (SMTP/Resend)"""
     reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?token={token}"
-    logger.info(f"Password reset link generated for {email}: {reset_link}")
+    send_password_reset_email(email, reset_link)
 
 
 @router.post(

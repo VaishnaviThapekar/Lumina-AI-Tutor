@@ -150,6 +150,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { BookOpen, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 
+import { formatAuthError } from '@/lib/auth';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function ResetPasswordPage() {
@@ -196,7 +198,7 @@ function ResetPasswordForm() {
             });
             setSuccess(true);
         } catch (err: any) {
-            setError(err?.response?.data?.detail || 'Could not reset password. The link may have expired.');
+            setError(formatAuthError(err?.response?.data?.detail, 'Could not reset password. The link may have expired.'));
         }
         setLoading(false);
     };

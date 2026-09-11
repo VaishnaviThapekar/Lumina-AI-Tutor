@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import { formatAuthError } from '@/lib/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -25,10 +26,10 @@ export default function ForgotPasswordPage() {
 
         setLoading(true);
         try {
-            await axios.post(`${API_BASE_URL}/api/forgot-password`, { email });
+            await axios.post(`${API_BASE_URL}/api/forgot-password`, { email: email.trim().toLowerCase() });
             setSubmitted(true);
         } catch (err: any) {
-            setError(err?.response?.data?.detail || 'Something went wrong. Please try again.');
+            setError(formatAuthError(err?.response?.data?.detail, 'Something went wrong. Please try again.'));
         }
         setLoading(false);
     };

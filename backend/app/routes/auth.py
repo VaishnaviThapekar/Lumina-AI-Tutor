@@ -89,8 +89,9 @@ async def oauth_login(request: OAuthLoginRequest, db: Session = Depends(get_db))
 async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     """Create a real user account in the database and return a JWT."""
     email_clean = user_data.email.lower().strip()
+    username_clean = user_data.username.strip()
     existing = db.query(User).filter(
-        (User.email == email_clean) | (User.username == user_data.username)
+        (User.email == email_clean) | (User.username == username_clean)
     ).first()
     if existing:
         field = "email" if existing.email == email_clean else "username"
@@ -102,7 +103,7 @@ async def signup(user_data: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
     user = User(
-        username=user_data.username,
+        username=username_clean,
         email=email_clean,
         hashed_password=hashed,
     )

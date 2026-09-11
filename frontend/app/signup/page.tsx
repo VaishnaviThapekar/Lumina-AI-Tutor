@@ -200,7 +200,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { BookOpen, Mail, Lock, Eye, EyeOff, User as UserIcon, Home, Sparkles, Zap, Brain, Check } from 'lucide-react';
-import { signUp } from '@/lib/auth';
+import { signUp, validateEmail, validatePassword, validateUsername } from '@/lib/auth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -223,26 +223,31 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    if (!formData.username || !formData.email || !formData.password) {
-      setError('Please fill in all fields');
-      setLoading(false);
+    const usernameErr = validateUsername(formData.username);
+    if (usernameErr) {
+      setError(usernameErr);
+      return;
+    }
+
+    const emailErr = validateEmail(formData.email);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
+
+    const passErr = validatePassword(formData.password);
+    if (passErr) {
+      setError(passErr);
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
-      setLoading(false);
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      setLoading(false);
-      return;
-    }
-
+    setLoading(true);
     const result = await signUp(formData.username, formData.email, formData.password);
 
     if (!result.success) {

@@ -68,6 +68,36 @@ export const logout = () => {
   }
 };
 
+export const formatAuthError = (detail: any, fallback: string = 'An error occurred'): string => {
+  if (!detail) return fallback;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          if (item.msg) {
+            const cleanMsg = item.msg.replace(/^Value error,\s*/i, '');
+            const field = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : '';
+            if (field && field !== 'body') {
+              const fieldName = String(field).charAt(0).toUpperCase() + String(field).slice(1);
+              return `${fieldName}: ${cleanMsg}`;
+            }
+            return cleanMsg;
+          }
+        }
+        return JSON.stringify(item);
+      })
+      .join('. ');
+  }
+  if (typeof detail === 'object') {
+    if (detail.msg) return String(detail.msg);
+    if (detail.message) return String(detail.message);
+    return JSON.stringify(detail);
+  }
+  return String(detail);
+};
+
 // ---- Real signup / login against the backend ----
 
 export const signUp = async (
@@ -77,8 +107,8 @@ export const signUp = async (
 ): Promise<AuthResult> => {
   try {
     const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
-      username,
-      email,
+      username: username.trim(),
+      email: email.trim().toLowerCase(),
       password,
     });
     const { access_token, user } = response.data;
@@ -86,7 +116,7 @@ export const signUp = async (
     return { success: true, user: enriched };
   } catch (err: any) {
     const detail = err?.response?.data?.detail;
-    return { success: false, error: detail || 'Signup failed. Please try again.' };
+    return { success: false, error: formatAuthError(detail, 'Signup failed. Please try again.') };
   }
 };
 
@@ -96,7 +126,7 @@ export const signIn = async (
 ): Promise<AuthResult> => {
   try {
     const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
-      email,
+      email: email.trim().toLowerCase(),
       password,
     });
     const { access_token, user } = response.data;
@@ -104,7 +134,7 @@ export const signIn = async (
     return { success: true, user: enriched };
   } catch (err: any) {
     const detail = err?.response?.data?.detail;
-    return { success: false, error: detail || 'Incorrect email or password' };
+    return { success: false, error: formatAuthError(detail, 'Incorrect email or password') };
   }
 };
 
@@ -124,15 +154,15 @@ export const syncOAuthSession = async (
     const response = await axios.post(`${API_BASE_URL}/api/auth/oauth-login`, {
       provider,
       token,
-      name: name || undefined,
-      email: email || undefined,
+      name: name?.trim() || undefined,
+      email: email?.trim().toLowerCase() || undefined,
     });
     const { access_token, user } = response.data;
     const enriched = storeSession(access_token, user);
     return { success: true, user: enriched };
   } catch (err: any) {
     const detail = err?.response?.data?.detail;
-    return { success: false, error: detail || 'Could not complete OAuth authentication.' };
+    return { success: false, error: formatAuthError(detail, 'Could not complete OAuth authentication.') };
   }
 };
 
@@ -155,7 +185,7 @@ export const updateUserProfile = async (
     const token = getToken();
     const response = await axios.put(
       `${API_BASE_URL}/api/settings/profile`,
-      { username: updates.username, email: updates.email },
+      { username: updates.username?.trim(), email: updates.email?.trim().toLowerCase() },
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const current = getCurrentUser();
@@ -170,7 +200,7 @@ export const updateUserProfile = async (
     return { success: true, user: updated };
   } catch (err: any) {
     const detail = err?.response?.data?.detail;
-    return { success: false, error: detail || 'Failed to update profile' };
+    return { success: false, error: formatAuthError(detail, 'Failed to update profile') };
   }
 };
 
@@ -189,7 +219,7 @@ export const changePassword = async (
     return { success: true };
   } catch (err: any) {
     const detail = err?.response?.data?.detail;
-    return { success: false, error: detail || 'Failed to change password' };
+    return { success: false, error: formatAuthError(detail, 'Failed to change password') };
   }
 };
 
@@ -207,14 +237,14 @@ export const deleteAccount = async (
     return { success: true };
   } catch (err: any) {
     const detail = err?.response?.data?.detail;
-    return { success: false, error: detail || 'Failed to delete account' };
+    return { success: false, error: formatAuthError(detail, 'Failed to delete account') };
   }
 };
 
 export const validateEmail = (email: string): string | null => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email) return 'Email is required';
-  if (!re.test(email)) return 'Enter a valid email address';
+  if (!email || !email.trim()) return 'Email is required';
+  if (!re.test(email.trim())) return 'Enter a valid email address';
   return null;
 };
 
@@ -226,9 +256,9 @@ export const validatePassword = (password: string): string | null => {
 };
 
 export const validateUsername = (username: string): string | null => {
-  if (!username) return 'Username is required';
-  if (username.length < 3) return 'Username must be at least 3 characters';
-  if (username.length > 50) return 'Username must not exceed 50 characters';
+  if (!username || !username.trim()) return 'Full Name / Username is required';
+  if (username.trim().length < 3) return 'Must be at least 3 characters';
+  if (username.trim().length > 50) return 'Must not exceed 50 characters';
   return null;
 };
 

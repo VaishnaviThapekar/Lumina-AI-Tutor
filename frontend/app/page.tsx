@@ -149,24 +149,10 @@ export default function HomePage() {
               </button>
 
               <button
-                onClick={() => router.push('/dashboard')}
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 text-purple-700 dark:text-purple-300 rounded-xl font-bold text-xs border border-purple-200 dark:border-purple-800 transition-all"
-              >
-                <span>Guest Live Demo</span>
-              </button>
-
-              <button
                 onClick={() => router.push('/login')}
-                className="px-4 py-2 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-              >
-                Sign In
-              </button>
-
-              <button
-                onClick={() => router.push('/signup')}
                 className="px-5 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl text-xs font-extrabold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
               >
-                Get Started Free
+                Sign In
               </button>
             </div>
           </div>

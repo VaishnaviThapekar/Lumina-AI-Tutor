@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { BookOpen, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import { formatAuthError } from '@/lib/auth';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function ForgotPasswordPage() {
     const router = useRouter();

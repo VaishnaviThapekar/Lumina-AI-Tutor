@@ -1,8 +1,8 @@
 // lib/auth.ts - Real authentication against the FastAPI backend
 
 import axios from 'axios';
+import { API_BASE_URL } from './config';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TOKEN_KEY = 'lumina_token';
 const USER_KEY = 'lumina_user';
 

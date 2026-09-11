@@ -6,6 +6,7 @@ import VoiceControls from './VoiceControls';
 import { awardXPForChat } from '@/lib/xpTriggers';
 import { addStudyTime } from '@/lib/studyTracker';
 import { notifyLuminaDataUpdated } from '@/lib/eventBus';
+import { API_BASE_URL } from '@/lib/config';
 
 interface ReasoningStep {
     step: number;
@@ -176,7 +177,6 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
         const loadHistory = async () => {
             try {
                 const token = localStorage.getItem('lumina_token');
-                const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
                 const response = await fetch(`${API_BASE_URL}/api/chat/history/${activeSessionId}`, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {},
                 });
@@ -250,7 +250,6 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
 
         try {
             const token = localStorage.getItem('lumina_token');
-            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const response = await fetch(`${API_BASE_URL}/api/chat/message`, {
                 method: 'POST',
                 headers: {

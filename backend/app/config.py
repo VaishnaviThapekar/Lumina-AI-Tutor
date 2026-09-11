@@ -47,8 +47,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     
     # Frontend & CORS
-    FRONTEND_URL: str = "http://localhost:3000"
-    ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001"
+    FRONTEND_URL: str = "https://lumina-ai-tutor.vercel.app"
+    ALLOWED_ORIGINS: str = "https://lumina-ai-tutor.vercel.app,http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001"
     
     # Email / SMTP Settings (Password Reset & Notifications)
     SMTP_HOST: Optional[str] = None

@@ -284,11 +284,12 @@ export const getFlashcardStats = () => {
   };
 };
 
+import { API_BASE_URL } from './config';
+
 export const generateFlashcardsFromDocument = async (
   documentId: number,
   count: number = 10
 ): Promise<Flashcard[]> => {
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const token = typeof window !== 'undefined' ? localStorage.getItem('lumina_token') : null;
 
   const response = await fetch(`${API_BASE_URL}/api/flashcards/generate`, {

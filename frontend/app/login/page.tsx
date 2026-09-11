@@ -163,7 +163,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { BookOpen, Mail, Lock, Eye, EyeOff, Home, Sparkles, Zap, Brain } from 'lucide-react';
-import { signIn as localSignIn } from '@/lib/auth';
+import { signIn as localSignIn, formatAuthError } from '@/lib/auth';
+import { API_BASE_URL } from '@/lib/config';
 import axios from 'axios';
 
 export default function LoginPage() {
@@ -177,6 +178,8 @@ export default function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -185,26 +188,27 @@ export default function LoginPage() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail) {
-      setError('Please enter your email');
+    setResetError('');
+    if (!resetEmail || !resetEmail.trim()) {
+      setResetError('Please enter your email address');
       return;
     }
 
+    setResetLoading(true);
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       await axios.post(`${API_BASE_URL}/api/forgot-password`, { email: resetEmail.trim().toLowerCase() });
-    } catch (err) {
-      // The backend intentionally returns success even for unknown emails
-      // (to avoid leaking which emails are registered), so this rarely fires.
-      console.error('Forgot password request failed:', err);
+      setResetSuccess(true);
+      setTimeout(() => {
+        setShowForgotPassword(false);
+        setResetSuccess(false);
+        setResetEmail('');
+        setResetError('');
+      }, 4000);
+    } catch (err: any) {
+      setResetError(formatAuthError(err?.response?.data?.detail, 'Unable to request password reset. Please try again.'));
+    } finally {
+      setResetLoading(false);
     }
-
-    setResetSuccess(true);
-    setTimeout(() => {
-      setShowForgotPassword(false);
-      setResetSuccess(false);
-      setResetEmail('');
-    }, 3000);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -480,6 +484,11 @@ export default function LoginPage() {
               </div>
             ) : (
               <form onSubmit={handleForgotPassword} className="space-y-4">
+                {resetError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+                    {resetError}
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
                   <div className="relative">
@@ -497,9 +506,10 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-[1.02]"
+                  disabled={resetLoading}
+                  className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-[1.02] disabled:opacity-50"
                 >
-                  Send Reset Link
+                  {resetLoading ? 'Sending...' : 'Send Reset Link'}
                 </button>
 
                 <button

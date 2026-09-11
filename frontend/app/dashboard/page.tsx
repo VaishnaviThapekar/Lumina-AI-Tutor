@@ -33,7 +33,7 @@ import VectorEmbeddingSpace from '@/components/VectorEmbeddingSpace';
 import { Headphones, PenTool, Layers, Zap, Youtube, Compass } from 'lucide-react';
 import { createSession, listDocuments, deleteDocument } from '@/lib/api';
 import type { Session, Document, UploadResponse } from '@/lib/types';
-import { getCurrentUser, logout } from '@/lib/auth';
+import { getCurrentUser, logout, syncOAuthSession } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
@@ -139,29 +139,53 @@ export default function Dashboard() {
         }
 
         if (sessionStatus === 'authenticated') {
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                initUserSession(currentUser);
+                return;
+            }
+
             setAuthSyncing(true);
             setAuthSyncFailed(false);
 
-            const pollIntervalMs = 1000;
-            const maxWaitMs = 75000;
-            let elapsed = 0;
+            const provider = (session as any)?.provider || 'google';
+            const providerToken = (session as any)?.providerToken || (session as any)?.id || '';
+            const name = session?.user?.name || session?.user?.email?.split('@')[0] || '';
+            const email = session?.user?.email || '';
 
-            const interval = setInterval(() => {
-                const syncedUser = getCurrentUser();
-                if (syncedUser) {
-                    clearInterval(interval);
-                    initUserSession(syncedUser);
-                    return;
-                }
-                elapsed += pollIntervalMs;
-                if (elapsed >= maxWaitMs) {
-                    clearInterval(interval);
-                    setAuthSyncing(false);
-                    setAuthSyncFailed(true);
-                }
-            }, pollIntervalMs);
-
-            return () => clearInterval(interval);
+            if (email) {
+                syncOAuthSession(provider, providerToken, name, email)
+                    .then((result) => {
+                        if (result.success && result.user) {
+                            initUserSession(result.user);
+                            setAuthSyncing(false);
+                        } else {
+                            // Check if local token was set
+                            const fallbackUser = getCurrentUser();
+                            if (fallbackUser) {
+                                initUserSession(fallbackUser);
+                                setAuthSyncing(false);
+                            } else {
+                                setAuthSyncing(false);
+                                setAuthSyncFailed(true);
+                            }
+                        }
+                    })
+                    .catch(() => {
+                        const fallbackUser = getCurrentUser();
+                        if (fallbackUser) {
+                            initUserSession(fallbackUser);
+                            setAuthSyncing(false);
+                        } else {
+                            setAuthSyncing(false);
+                            setAuthSyncFailed(true);
+                        }
+                    });
+            } else {
+                setAuthSyncing(false);
+                setAuthSyncFailed(true);
+            }
+            return;
         }
 
         if (!user) {

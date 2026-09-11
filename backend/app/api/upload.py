@@ -117,7 +117,7 @@ async def upload_document(
         if len(chunks) > max_chunks:
             chunks = chunks[:max_chunks]
 
-        # 7. Create database record
+        # 7. Stage database record (flush to assign document.id without committing)
         namespace = f"doc_{file_uuid}"
         document = Document(
             user_id=current_user.id,
@@ -127,16 +127,19 @@ async def upload_document(
             uploaded_at=datetime.utcnow()
         )
         db.add(document)
-        db.commit()
-        db.refresh(document)
+        db.flush()
 
-        # 8. Store vectors
+        # 8. Store vectors in vector database
         vector_store = VectorStoreService()
         num_chunks = vector_store.store_document_chunks(
             chunks=chunks,
             namespace=namespace,
             document_id=document.id
         )
+
+        # 9. Commit database transaction only after vectors are successfully indexed
+        db.commit()
+        db.refresh(document)
 
         return DocumentUploadResponse(
             id=document.id,

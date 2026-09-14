@@ -702,35 +702,6 @@ export default function HomePage() {
         </span>
       </div>
 
-      {/* Main Bottom CTA Section */}
-      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-3xl p-10 md:p-14 text-center text-white shadow-2xl transform hover:scale-[1.01] transition-transform duration-500 relative overflow-hidden group">
-          <div className="relative z-10 space-y-4">
-            <h2 className="text-4xl md:text-5xl font-extrabold leading-tight">
-              Ready to Accelerate Your Learning?
-            </h2>
-            <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto">
-              Join thousands of students using Lumina AI Tutor to master complex courses, ace exams, and retain knowledge effortlessly.
-            </p>
-            <div className="pt-4 flex flex-wrap justify-center gap-4">
-              <button
-                onClick={() => router.push('/signup')}
-                className="group/btn px-8 py-4 bg-white text-purple-700 hover:bg-purple-50 rounded-2xl font-extrabold text-sm shadow-xl hover:shadow-2xl transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 flex items-center gap-2"
-              >
-                <span>Get Started Free</span>
-                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="px-8 py-4 bg-black/30 hover:bg-black/40 backdrop-blur-md text-white border border-white/30 rounded-2xl font-extrabold text-sm shadow-xl transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300"
-              >
-                Launch Guest Live Demo
-              </button>
-            </div>
-          </div>
-          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800/60 mt-12 bg-white/40 dark:bg-gray-950/40 backdrop-blur-md">

@@ -702,142 +702,6 @@ export default function HomePage() {
         </span>
       </div>
 
-
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800/60 mt-12 bg-white/40 dark:bg-gray-950/40 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white shadow-sm">
-              <BookOpen className="w-3.5 h-3.5" />
-            </div>
-            <span className="font-bold text-gray-800 dark:text-gray-200">Lumina AI Tutor</span>
-            <span>© 2026. All rights reserved.</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <a href="#features" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Features</a>
-            <a href="#faq" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">FAQ</a>
-            <button onClick={() => router.push('/login')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Sign In</button>
-          </div>
-        </div>
-      </footer>
-
-      {/* CSS Animations */}
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-20px) translateX(10px); }
-        }
-        @keyframes float-delayed {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-30px) translateX(-15px); }
-        }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-15px) translateX(20px); }
-        }
-        @keyframes spin-slow {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-        @keyframes marqueeTrack {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        @keyframes marqueeReverse {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0); }
-        }
-
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        .animate-float-delayed { animation: float-delayed 8s ease-in-out infinite; }
-        .animate-float-slow { animation: float-slow 10s ease-in-out infinite; }
-        .animate-spin-slow { animation: spin-slow 12s linear infinite; }
-        .animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; }
-        .animate-marquee-track { animation: marqueeTrack 30s linear infinite; }
-        .animate-marquee-reverse { animation: marqueeReverse 35s linear infinite; }
-
-        .bg-grid-pattern {
-          background-image: 
-            linear-gradient(to right, currentColor 1px, transparent 1px),
-            linear-gradient(to bottom, currentColor 1px, transparent 1px);
-          background-size: 40px 40px;
-        }
-        
-        .flip-card {
-          perspective: 1000px;
-          height: 320px;
-        }
-        .flip-card-inner {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-          transform-style: preserve-3d;
-        }
-        .flip-card:hover .flip-card-inner {
-          transform: rotateY(180deg);
-        }
-        .flip-card-front,
-        .flip-card-back {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          backface-visibility: hidden;
-        }
-        .flip-card-back {
-          transform: rotateY(180deg);
-        }
-      `}</style>
-
-      {/* FAQ Section */}
-      <section id="faq" className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-left">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded-full text-xs font-bold mb-2 animate-bounce-slow">
-            <HelpCircle className="w-4 h-4" />
-            <span>Got Questions?</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
-            Frequently Asked Questions
-          </h2>
-        </div>
-
-        <div className="space-y-3">
-          {FAQS.map((faq, index) => {
-            const isOpen = openFaq === index;
-            return (
-              <div
-                key={index}
-                className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
-              >
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : index)}
-                  className="w-full p-5 text-left font-bold text-sm text-gray-900 dark:text-white flex items-center justify-between gap-4 transition-colors hover:text-purple-600 dark:hover:text-purple-400"
-                >
-                  <span>{faq.q}</span>
-                  <ChevronDown className={`w-5 h-5 text-purple-600 dark:text-purple-400 transition-transform duration-300 ${isOpen ? 'rotate-180 scale-110' : ''}`} />
-                </button>
-                <div
-                  className={`grid transition-all duration-300 ease-in-out ${
-                    isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                  }`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="px-5 pb-5 text-xs text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-gray-800/60 pt-3">
-                      {faq.a}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
       {/* Main Bottom CTA Section */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-3xl p-10 md:p-14 text-center text-white shadow-2xl transform hover:scale-[1.01] transition-transform duration-500 relative overflow-hidden group">
@@ -909,12 +773,22 @@ export default function HomePage() {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-4px); }
         }
+        @keyframes marqueeTrack {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes marqueeReverse {
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(0); }
+        }
 
         .animate-float { animation: float 6s ease-in-out infinite; }
         .animate-float-delayed { animation: float-delayed 8s ease-in-out infinite; }
         .animate-float-slow { animation: float-slow 10s ease-in-out infinite; }
         .animate-spin-slow { animation: spin-slow 12s linear infinite; }
         .animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; }
+        .animate-marquee-track { animation: marqueeTrack 30s linear infinite; }
+        .animate-marquee-reverse { animation: marqueeReverse 35s linear infinite; }
 
         .bg-grid-pattern {
           background-image: 

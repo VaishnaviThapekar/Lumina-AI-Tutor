@@ -254,17 +254,17 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Social Proof Stats */}
+          {/* Social Proof Stats with Floating Animations */}
           <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto pt-8">
-            <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm hover-lift transition-all duration-300">
+            <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm hover-lift transition-all duration-300 animate-float">
               <div className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">10K+</div>
               <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mt-1">Active Students</div>
             </div>
-            <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm hover-lift transition-all duration-300">
+            <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm hover-lift transition-all duration-300 animate-float-delayed">
               <div className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">50K+</div>
               <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mt-1">Study Sessions</div>
             </div>
-            <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm hover-lift transition-all duration-300">
+            <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm hover-lift transition-all duration-300 animate-float-slow">
               <div className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">95%</div>
               <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mt-1">Score Retention</div>
             </div>
@@ -273,259 +273,435 @@ export default function HomePage() {
       </section>
 
       {/* Interactive Platform Feature Showcase Tabs */}
-      <section id="features" className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12 animate-fade-in-slide-up">
+      <section id="features" className="relative z-10 max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-16 overflow-hidden">
+        <div className="text-center mb-12 animate-fade-in-slide-up max-w-7xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded-full text-xs font-bold mb-3 animate-pulse">
+            <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <span>Continuous Auto-Moving Feature Track</span>
+          </div>
           <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-3">
             Built for <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Mastery Learning</span>
           </h2>
           <p className="text-base md:text-lg text-gray-600 dark:text-gray-300">
-            Hover or click to explore how Lumina turns raw notes into an interactive learning engine
+            Hover over any moving card to pause scrolling and flip to reveal deep technical capabilities
           </p>
         </div>
 
-        {/* 6 Feature Flip Cards */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Card 1 */}
-          <div className="flip-card group hover-lift">
-            <div className="flip-card-inner">
-              <div className="flip-card-front bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
-                <div>
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
-                    <Brain className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-extrabold mb-2">Adaptive Socratic AI</h3>
-                  <p className="text-blue-100 text-xs leading-relaxed">
-                    AI adjusts question difficulty dynamically based on your understanding.
-                  </p>
-                </div>
-                <div className="text-xs font-bold text-blue-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  <span>Hover to flip card</span> →
-                </div>
-              </div>
-              <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Socratic Capabilities</h3>
-                  <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Step-by-step problem scaffolding</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>ELI5 &amp; real-world analogies</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <span>Voice response speech synthesis</span>
-                    </li>
-                  </ul>
-                </div>
-                <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">Integrated RAG Engine</span>
-              </div>
-            </div>
-          </div>
+        {/* Moving Feature Cards Track Container */}
+        <div className="relative w-full overflow-hidden py-6">
+          {/* Gradient Side Fade Overlays */}
+          <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-indigo-50/90 via-indigo-50/50 to-transparent dark:from-gray-950/90 dark:via-gray-950/50 z-20 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-pink-50/90 via-pink-50/50 to-transparent dark:from-gray-950/90 dark:via-gray-950/50 z-20 pointer-events-none" />
 
-          {/* Card 2 */}
-          <div className="flip-card group hover-lift">
-            <div className="flip-card-inner">
-              <div className="flip-card-front bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
-                <div>
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
-                    <Zap className="w-7 h-7 text-white" />
+          {/* Marquee Moving Track */}
+          <div className="flex gap-6 animate-marquee-track hover:[animation-play-state:paused] w-max py-2">
+            {/* Duplicated array for seamless infinite looping animation */}
+            {[1, 2].map((loopIdx) => (
+              <React.Fragment key={loopIdx}>
+                {/* Card 1 */}
+                <div className="flip-card group hover-lift w-[320px] sm:w-[350px] flex-shrink-0">
+                  <div className="flip-card-inner">
+                    <div className="flip-card-front bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
+                      <div>
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
+                          <Brain className="w-7 h-7 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-extrabold mb-2">Adaptive Socratic AI</h3>
+                        <p className="text-blue-100 text-xs leading-relaxed">
+                          AI adjusts question difficulty dynamically based on your understanding.
+                        </p>
+                      </div>
+                      <div className="text-xs font-bold text-blue-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        <span>Hover to flip card</span> →
+                      </div>
+                    </div>
+                    <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Socratic Capabilities</h3>
+                        <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                            <span>Step-by-step problem scaffolding</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                            <span>ELI5 &amp; real-world analogies</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                            <span>Voice response speech synthesis</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">Integrated RAG Engine</span>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-extrabold mb-2">Pinecone RAG Vectors</h3>
-                  <p className="text-purple-100 text-xs leading-relaxed">
-                    Advanced semantic retrieval ensures answers are 100% grounded in your document.
-                  </p>
                 </div>
-                <div className="text-xs font-bold text-purple-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  <span>Hover to flip card</span> →
-                </div>
-              </div>
-              <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">RAG Highlights</h3>
-                  <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                      <span>Pinecone vector search index</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                      <span>Local CPU fallback system</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                      <span>Zero hallucination guarantees</span>
-                    </li>
-                  </ul>
-                </div>
-                <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400">100% Source Backed</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Card 3 */}
-          <div className="flip-card group hover-lift">
-            <div className="flip-card-inner">
-              <div className="flip-card-front bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
-                <div>
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
-                    <Layers className="w-7 h-7 text-white" />
+                {/* Card 2 */}
+                <div className="flip-card group hover-lift w-[320px] sm:w-[350px] flex-shrink-0">
+                  <div className="flip-card-inner">
+                    <div className="flip-card-front bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
+                      <div>
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
+                          <Zap className="w-7 h-7 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-extrabold mb-2">Pinecone RAG Vectors</h3>
+                        <p className="text-purple-100 text-xs leading-relaxed">
+                          Advanced semantic retrieval ensures answers are 100% grounded in your document.
+                        </p>
+                      </div>
+                      <div className="text-xs font-bold text-purple-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        <span>Hover to flip card</span> →
+                      </div>
+                    </div>
+                    <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">RAG Highlights</h3>
+                        <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                            <span>Pinecone vector search index</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                            <span>Local CPU fallback system</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                            <span>Zero hallucination guarantees</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400">100% Source Backed</span>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-extrabold mb-2">Concept Mapping</h3>
-                  <p className="text-amber-100 text-xs leading-relaxed">
-                    Transform text into interactive Mermaid dependency graphs.
-                  </p>
                 </div>
-                <div className="text-xs font-bold text-amber-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  <span>Hover to flip card</span> →
-                </div>
-              </div>
-              <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Graph Visualizer</h3>
-                  <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <span>Mermaid topic hierarchy nodes</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <span>Color-coded difficulty clusters</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <span>Direct practice node launching</span>
-                    </li>
-                  </ul>
-                </div>
-                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">Visual Learning Path</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Card 4 */}
-          <div className="flip-card group hover-lift">
-            <div className="flip-card-inner">
-              <div className="flip-card-front bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
-                <div>
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
-                    <Target className="w-7 h-7 text-white" />
+                {/* Card 3 */}
+                <div className="flip-card group hover-lift w-[320px] sm:w-[350px] flex-shrink-0">
+                  <div className="flip-card-inner">
+                    <div className="flip-card-front bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
+                      <div>
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
+                          <Layers className="w-7 h-7 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-extrabold mb-2">Concept Mapping</h3>
+                        <p className="text-amber-100 text-xs leading-relaxed">
+                          Transform text into interactive Mermaid dependency graphs.
+                        </p>
+                      </div>
+                      <div className="text-xs font-bold text-amber-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        <span>Hover to flip card</span> →
+                      </div>
+                    </div>
+                    <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Graph Visualizer</h3>
+                        <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <span>Mermaid topic hierarchy nodes</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <span>Color-coded difficulty clusters</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <span>Direct practice node launching</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">Visual Learning Path</span>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-extrabold mb-2">Adaptive Quizzes</h3>
-                  <p className="text-emerald-100 text-xs leading-relaxed">
-                    Test comprehension with Bloom's taxonomy multiple choice tests.
-                  </p>
                 </div>
-                <div className="text-xs font-bold text-emerald-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  <span>Hover to flip card</span> →
-                </div>
-              </div>
-              <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quiz Engine</h3>
-                  <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                      <span>Bloom's Taxonomy questioning</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                      <span>Instant answer explanations</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                      <span>Competency score scaling</span>
-                    </li>
-                  </ul>
-                </div>
-                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Competency Tracking</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Card 5 */}
-          <div className="flip-card group hover-lift">
-            <div className="flip-card-inner">
-              <div className="flip-card-front bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
-                <div>
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
-                    <Brain className="w-7 h-7 text-white" />
+                {/* Card 4 */}
+                <div className="flip-card group hover-lift w-[320px] sm:w-[350px] flex-shrink-0">
+                  <div className="flip-card-inner">
+                    <div className="flip-card-front bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
+                      <div>
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
+                          <Target className="w-7 h-7 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-extrabold mb-2">Adaptive Quizzes</h3>
+                        <p className="text-emerald-100 text-xs leading-relaxed">
+                          Test comprehension with Bloom's taxonomy multiple choice tests.
+                        </p>
+                      </div>
+                      <div className="text-xs font-bold text-emerald-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        <span>Hover to flip card</span> →
+                      </div>
+                    </div>
+                    <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quiz Engine</h3>
+                        <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                            <span>Bloom's Taxonomy questioning</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                            <span>Instant answer explanations</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                            <span>Competency score scaling</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Competency Tracking</span>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-extrabold mb-2">Smart Flashcards</h3>
-                  <p className="text-indigo-100 text-xs leading-relaxed">
-                    SM-2 spaced repetition decks with 1-click Anki CSV export.
-                  </p>
                 </div>
-                <div className="text-xs font-bold text-indigo-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  <span>Hover to flip card</span> →
-                </div>
-              </div>
-              <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Spaced Repetition</h3>
-                  <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
-                      <span>SM-2 rating interval algorithm</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
-                      <span>1-Click Anki CSV export</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
-                      <span>Custom deck categorization</span>
-                    </li>
-                  </ul>
-                </div>
-                <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Anki Sync Ready</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Card 6 */}
-          <div className="flip-card group hover-lift">
-            <div className="flip-card-inner">
-              <div className="flip-card-front bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
-                <div>
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
-                    <Award className="w-7 h-7 text-white" />
+                {/* Card 5 */}
+                <div className="flip-card group hover-lift w-[320px] sm:w-[350px] flex-shrink-0">
+                  <div className="flip-card-inner">
+                    <div className="flip-card-front bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
+                      <div>
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
+                          <Brain className="w-7 h-7 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-extrabold mb-2">Smart Flashcards</h3>
+                        <p className="text-indigo-100 text-xs leading-relaxed">
+                          SM-2 spaced repetition decks with 1-click Anki CSV export.
+                        </p>
+                      </div>
+                      <div className="text-xs font-bold text-indigo-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        <span>Hover to flip card</span> →
+                      </div>
+                    </div>
+                    <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Spaced Repetition</h3>
+                        <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
+                            <span>SM-2 rating interval algorithm</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
+                            <span>1-Click Anki CSV export</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" />
+                            <span>Custom deck categorization</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">Anki Sync Ready</span>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-extrabold mb-2">Gamification &amp; XP</h3>
-                  <p className="text-pink-100 text-xs leading-relaxed">
-                    Earn XP, maintain daily streaks, and unlock achievement badges.
-                  </p>
                 </div>
-                <div className="text-xs font-bold text-pink-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  <span>Hover to flip card</span> →
+
+                {/* Card 6 */}
+                <div className="flip-card group hover-lift w-[320px] sm:w-[350px] flex-shrink-0">
+                  <div className="flip-card-inner">
+                    <div className="flip-card-front bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl p-8 text-white shadow-2xl flex flex-col justify-between transition-all duration-300">
+                      <div>
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-md group-hover:rotate-6 group-hover:scale-110 transition-transform duration-300">
+                          <Award className="w-7 h-7 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-extrabold mb-2">Gamification &amp; XP</h3>
+                        <p className="text-pink-100 text-xs leading-relaxed">
+                          Earn XP, maintain daily streaks, and unlock achievement badges.
+                        </p>
+                      </div>
+                      <div className="text-xs font-bold text-pink-200 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        <span>Hover to flip card</span> →
+                      </div>
+                    </div>
+                    <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Rewards System</h3>
+                        <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
+                            <span>Real-time interlinked XP events</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
+                            <span>Daily streaks &amp; milestone badges</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
+                            <span>Social Hub global leaderboards</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <span className="text-[11px] font-bold text-pink-600 dark:text-pink-400">Continuous Rewards</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flip-card-back bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Rewards System</h3>
-                  <ul className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
-                      <span>Real-time interlinked XP events</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
-                      <span>Daily streaks &amp; milestone badges</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-pink-500 flex-shrink-0 mt-0.5" />
-                      <span>Social Hub global leaderboards</span>
-                    </li>
-                  </ul>
-                </div>
-                <span className="text-[11px] font-bold text-pink-600 dark:text-pink-400">Continuous Rewards</span>
-              </div>
-            </div>
+              </React.Fragment>
+            ))}
           </div>
         </div>
       </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-left">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded-full text-xs font-bold mb-2 animate-bounce-slow">
+            <HelpCircle className="w-4 h-4" />
+            <span>Got Questions?</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
+            Frequently Asked Questions
+          </h2>
+        </div>
+
+        <div className="space-y-3">
+          {FAQS.map((faq, index) => {
+            const isOpen = openFaq === index;
+            return (
+              <div
+                key={index}
+                className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-gray-200/60 dark:border-gray-800/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
+              >
+                <button
+                  onClick={() => setOpenFaq(isOpen ? null : index)}
+                  className="w-full p-5 text-left font-bold text-sm text-gray-900 dark:text-white flex items-center justify-between gap-4 transition-colors hover:text-purple-600 dark:hover:text-purple-400"
+                >
+                  <span>{faq.q}</span>
+                  <ChevronDown className={`w-5 h-5 text-purple-600 dark:text-purple-400 transition-transform duration-300 ${isOpen ? 'rotate-180 scale-110' : ''}`} />
+                </button>
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-5 pb-5 text-xs text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-gray-800/60 pt-3">
+                      {faq.a}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Main Bottom CTA Section */}
+      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-3xl p-10 md:p-14 text-center text-white shadow-2xl transform hover:scale-[1.01] transition-transform duration-500 relative overflow-hidden group">
+          <div className="relative z-10 space-y-4">
+            <h2 className="text-4xl md:text-5xl font-extrabold leading-tight">
+              Ready to Accelerate Your Learning?
+            </h2>
+            <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto">
+              Join thousands of students using Lumina AI Tutor to master complex courses, ace exams, and retain knowledge effortlessly.
+            </p>
+            <div className="pt-4 flex flex-wrap justify-center gap-4">
+              <button
+                onClick={() => router.push('/signup')}
+                className="group/btn px-8 py-4 bg-white text-purple-700 hover:bg-purple-50 rounded-2xl font-extrabold text-sm shadow-xl hover:shadow-2xl transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 flex items-center gap-2"
+              >
+                <span>Get Started Free</span>
+                <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+              </button>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="px-8 py-4 bg-black/30 hover:bg-black/40 backdrop-blur-md text-white border border-white/30 rounded-2xl font-extrabold text-sm shadow-xl transform hover:-translate-y-0.5 hover:scale-105 transition-all duration-300"
+              >
+                Launch Guest Live Demo
+              </button>
+            </div>
+          </div>
+          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800/60 mt-12 bg-white/40 dark:bg-gray-950/40 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white shadow-sm">
+              <BookOpen className="w-3.5 h-3.5" />
+            </div>
+            <span className="font-bold text-gray-800 dark:text-gray-200">Lumina AI Tutor</span>
+            <span>© 2026. All rights reserved.</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a href="#features" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Features</a>
+            <a href="#faq" className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">FAQ</a>
+            <button onClick={() => router.push('/login')} className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">Sign In</button>
+          </div>
+        </div>
+      </footer>
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) translateX(0px); }
+          50% { transform: translateY(-20px) translateX(10px); }
+        }
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0px) translateX(0px); }
+          50% { transform: translateY(-30px) translateX(-15px); }
+        }
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0px) translateX(0px); }
+          50% { transform: translateY(-15px) translateX(20px); }
+        }
+        @keyframes spin-slow {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        @keyframes marqueeTrack {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-float-delayed { animation: float-delayed 8s ease-in-out infinite; }
+        .animate-float-slow { animation: float-slow 10s ease-in-out infinite; }
+        .animate-spin-slow { animation: spin-slow 12s linear infinite; }
+        .animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; }
+        .animate-marquee-track { animation: marqueeTrack 30s linear infinite; }
+
+        .bg-grid-pattern {
+          background-image: 
+            linear-gradient(to right, currentColor 1px, transparent 1px),
+            linear-gradient(to bottom, currentColor 1px, transparent 1px);
+          background-size: 40px 40px;
+        }
+        
+        .flip-card {
+          perspective: 1000px;
+          height: 320px;
+        }
+        .flip-card-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          transform-style: preserve-3d;
+        }
+        .flip-card:hover .flip-card-inner {
+          transform: rotateY(180deg);
+        }
+        .flip-card-front,
+        .flip-card-back {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          backface-visibility: hidden;
+        }
+        .flip-card-back {
+          transform: rotateY(180deg);
+        }
+      `}</style>
 
       {/* FAQ Section */}
       <section id="faq" className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-left">

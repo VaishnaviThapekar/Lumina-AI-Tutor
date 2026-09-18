@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, History, Trash2, X, MessageSquare, Sparkles, ChevronRight, Clock, BookOpen } from 'lucide-react';
+import { Send, Loader2, History, Trash2, X, MessageSquare, Sparkles, ChevronRight, Clock, BookOpen, Download, Volume2 } from 'lucide-react';
 import VoiceControls from './VoiceControls';
 import { awardXPForChat } from '@/lib/xpTriggers';
 import { addStudyTime } from '@/lib/studyTracker';
@@ -40,12 +40,32 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [speakResponses, setSpeakResponses] = useState(true);
+    const [speechRate, setSpeechRate] = useState<number>(1.0);
     const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
     const [savedSessions, setSavedSessions] = useState<ChatSessionEntry[]>([]);
     const [socraticDepth, setSocraticDepth] = useState<'ELI5' | 'Standard' | 'Academic'>('Standard');
     const [savedNoteToast, setSavedNoteToast] = useState(false);
     const [isStreaming, setIsStreaming] = useState(false);
     const [streamingText, setStreamingText] = useState('');
+
+    const handleExportChatSession = () => {
+        if (messages.length === 0) return;
+        let md = `# Socratic AI Tutor Transcript (Session #${activeSessionId})\n\n`;
+        md += `*Exported on ${new Date().toLocaleString()} | Depth Level: ${socraticDepth}*\n\n---\n\n`;
+        
+        messages.forEach((m, idx) => {
+            const sender = m.role === 'user' ? '👤 Student' : '🤖 Lumina Socratic AI';
+            md += `### ${sender} (${m.timestamp.toLocaleTimeString()})\n\n${m.content}\n\n`;
+        });
+
+        const blob = new Blob([md], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lumina_chat_session_${activeSessionId}_${Date.now()}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     const handleStopGeneration = () => {
         if ((window as any)._currentStreamInterval) {
@@ -226,7 +246,7 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
         synthRef.current.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
+        utterance.rate = speechRate;
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
         utterance.lang = 'en-US';
@@ -395,6 +415,18 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
+                        {/* Export Chat Transcript Button */}
+                        {messages.length > 0 && (
+                            <button
+                                onClick={handleExportChatSession}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl border border-white/30 text-xs font-bold text-white transition-all shadow-sm"
+                                title="Export chat conversation as Markdown file"
+                            >
+                                <Download className="w-3.5 h-3.5 text-emerald-300" />
+                                <span>Export Chat</span>
+                            </button>
+                        )}
+
                         {/* Saved Chat History Button */}
                         <button
                             onClick={() => setShowHistoryDrawer(!showHistoryDrawer)}
@@ -404,7 +436,25 @@ export default function ChatInterface({ sessionId }: ChatInterfaceProps) {
                             <span>Saved Chats ({savedSessions.length})</span>
                         </button>
 
-                        <div className="flex items-center gap-4 text-xs font-semibold">
+                        <div className="flex items-center gap-3 text-xs font-semibold flex-wrap">
+                            {/* Speech Speed Selector */}
+                            <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-xl border border-white/30">
+                                <span className="text-[10px] text-purple-200 px-1 font-bold">Speed:</span>
+                                {[0.75, 1.0, 1.25, 1.5, 2.0].map((rate) => (
+                                    <button
+                                        key={rate}
+                                        onClick={() => setSpeechRate(rate)}
+                                        className={`px-1.5 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                                            speechRate === rate
+                                                ? 'bg-white text-purple-700 shadow-sm'
+                                                : 'text-white hover:bg-white/10'
+                                        }`}
+                                    >
+                                        {rate}x
+                                    </button>
+                                ))}
+                            </div>
+
                             {/* Explanation Depth Selector */}
                             <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md p-1 rounded-xl border border-white/30">
                                 <span className="text-[10px] text-purple-200 px-1 font-bold">Depth:</span>

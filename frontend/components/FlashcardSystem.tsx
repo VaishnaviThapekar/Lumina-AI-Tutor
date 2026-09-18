@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Brain, Plus, Play, Search, Filter, Trash2, Edit, RotateCw, Check, X, Clock, TrendingUp, Award, BookOpen, Zap } from 'lucide-react';
+import { Brain, Plus, Play, Search, Filter, Trash2, Edit, RotateCw, Check, X, Clock, TrendingUp, Award, BookOpen, Zap, Volume2, Download, Lightbulb } from 'lucide-react';
 import {
   getAllFlashcards,
   createFlashcard,
@@ -29,6 +29,7 @@ export default function FlashcardSystem() {
   const [stats, setStats] = useState(getFlashcardStats());
   const [decks, setDecks] = useState<FlashcardDeck[]>([]);
   const [showingAnswer, setShowingAnswer] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   
   // Create form
   const [newCard, setNewCard] = useState({ front: '', back: '', difficulty: 'medium' as const });
@@ -40,6 +41,41 @@ export default function FlashcardSystem() {
   const [genCount, setGenCount] = useState(10);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState('');
+
+  const speakText = (e: React.MouseEvent, text: string) => {
+    e.stopPropagation();
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleShuffleDeck = () => {
+    if (dueCards.length <= 1) return;
+    const shuffled = [...dueCards].sort(() => Math.random() - 0.5);
+    setDueCards(shuffled);
+    setCurrentCardIndex(0);
+    setIsFlipped(false);
+    setShowHint(false);
+  };
+
+  const handleExportJSON = () => {
+    if (flashcards.length === 0) {
+      alert('No flashcards available to export.');
+      return;
+    }
+    const jsonStr = JSON.stringify(flashcards, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lumina_flashcards_backup_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     loadData();
@@ -167,12 +203,32 @@ export default function FlashcardSystem() {
             </p>
           </div>
 
-          <button
-            onClick={handleExportAnkiCSV}
-            className="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-2"
-          >
-            <span>📥 Export Anki CSV</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleShuffleDeck}
+              className="px-3.5 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-1.5"
+              title="Shuffle active study cards"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+              <span>Shuffle Deck</span>
+            </button>
+
+            <button
+              onClick={handleExportAnkiCSV}
+              className="px-3.5 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5 text-amber-300" />
+              <span>Anki CSV</span>
+            </button>
+
+            <button
+              onClick={handleExportJSON}
+              className="px-3.5 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/30 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-300" />
+              <span>JSON Backup</span>
+            </button>
+          </div>
         </div>
         <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
       </div>
@@ -269,45 +325,89 @@ export default function FlashcardSystem() {
                     <div className="max-w-2xl mx-auto">
                       <div
                         onClick={handleFlipCard}
-                        className={`relative h-64 cursor-pointer transition-all duration-500 transform-gpu ${
+                        className={`relative h-72 cursor-pointer transition-all duration-500 transform-gpu ${
                           isFlipped ? 'rotate-y-180' : ''
                         }`}
                         style={{ transformStyle: 'preserve-3d' }}
                       >
                         {/* Front */}
                         <div
-                          className={`absolute inset-0 bg-gradient-to-br from-primary-500 to-purple-500 rounded-xl p-8 flex items-center justify-center text-white text-center ${
+                          className={`absolute inset-0 bg-gradient-to-br from-purple-600 via-indigo-600 to-pink-600 rounded-2xl p-8 flex flex-col justify-between text-white text-center shadow-xl ${
                             isFlipped ? 'invisible' : 'visible'
                           }`}
                           style={{ backfaceVisibility: 'hidden' }}
                         >
-                          <div>
-                            <p className="text-sm opacity-75 mb-4">Question</p>
-                            <p className="text-2xl font-semibold">{currentCard.front}</p>
-                            <p className="text-sm opacity-75 mt-6">Click to flip</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-purple-200 bg-white/20 px-2.5 py-1 rounded-md">
+                              Question #{currentCardIndex + 1}
+                            </span>
+                            <button
+                              onClick={(e) => speakText(e, currentCard.front)}
+                              className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-all"
+                              title="Listen to question"
+                            >
+                              <Volume2 className="w-4 h-4 text-emerald-300" />
+                            </button>
+                          </div>
+
+                          <div className="my-auto space-y-3">
+                            <p className="text-2xl font-bold leading-relaxed">{currentCard.front}</p>
+                            {showHint && (
+                              <div className="p-3 bg-white/20 backdrop-blur-md rounded-xl text-xs text-yellow-200 font-semibold border border-white/30 animate-in fade-in">
+                                💡 Scaffolding Clue: Think about key principles relating to {currentCard.front.split(' ')[0]}...
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs text-purple-200 pt-2 border-t border-white/20">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowHint(!showHint);
+                              }}
+                              className="px-2.5 py-1 bg-white/20 hover:bg-white/30 rounded-lg font-bold text-[11px]"
+                            >
+                              {showHint ? 'Hide Clue' : '💡 Show Clue'}
+                            </button>
+                            <span>Click card to flip answer</span>
                           </div>
                         </div>
 
                         {/* Back */}
                         <div
-                          className={`absolute inset-0 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-xl p-8 flex items-center justify-center text-white text-center transform rotate-y-180 ${
+                          className={`absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-800 rounded-2xl p-8 flex flex-col justify-between text-white text-center transform rotate-y-180 shadow-xl ${
                             isFlipped ? 'visible' : 'invisible'
                           }`}
                           style={{ backfaceVisibility: 'hidden' }}
                         >
-                          <div className="space-y-3">
-                            <p className="text-xs opacity-75 uppercase tracking-wider">Answer</p>
-                            <p className="text-xl font-bold">{currentCard.back}</p>
-                            
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-emerald-200 bg-white/20 px-2.5 py-1 rounded-md">
+                              Verified Answer
+                            </span>
+                            <button
+                              onClick={(e) => speakText(e, currentCard.back)}
+                              className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-all"
+                              title="Listen to answer"
+                            >
+                              <Volume2 className="w-4 h-4 text-emerald-300" />
+                            </button>
+                          </div>
+
+                          <div className="my-auto space-y-3">
+                            <p className="text-xl font-bold leading-relaxed">{currentCard.back}</p>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 alert(`💡 Mnemonic Memory Hook:\n\nAssociating "${currentCard.front.substring(0, 30)}..." with real-world analogies strengthens long-term neural recall by up to 80%!`);
                               }}
-                              className="px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm mt-2"
+                              className="px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm"
                             >
-                              <span>💡 AI Mnemonic Memory Hook</span>
+                              <span>💡 AI Mnemonic Hook</span>
                             </button>
+                          </div>
+
+                          <div className="text-xs text-emerald-200 text-right pt-2 border-t border-white/20">
+                            Select recall quality below
                           </div>
                         </div>
                       </div>

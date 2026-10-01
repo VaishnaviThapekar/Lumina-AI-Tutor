@@ -196,12 +196,39 @@ export default function Dashboard() {
     const [documentsLoading, setDocumentsLoading] = useState(true);
     const [documentsError, setDocumentsError] = useState(false);
 
+    // Initial load from local cache for 0ms instant rendering
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const cached = localStorage.getItem('lumina_cached_documents');
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        setDocuments(parsed);
+                        setDocumentsLoading(false);
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to read cached documents:', e);
+            }
+        }
+    }, []);
+
     const loadDocuments = useCallback(async () => {
-        setDocumentsLoading(true);
+        // Only show spinner if we have 0 cached documents
+        if (typeof window !== 'undefined') {
+            const cached = localStorage.getItem('lumina_cached_documents');
+            if (!cached || JSON.parse(cached).length === 0) {
+                setDocumentsLoading(true);
+            }
+        }
         setDocumentsError(false);
         try {
             const response = await listDocuments();
             setDocuments(response.documents);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('lumina_cached_documents', JSON.stringify(response.documents));
+            }
         } catch (error) {
             console.error('Error loading documents:', error);
             setDocumentsError(true);
@@ -229,19 +256,58 @@ export default function Dashboard() {
         try {
             const session = await createSession(uploadResponse.id);
             setCurrentSession(session);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(`lumina_doc_session_${uploadResponse.id}`, JSON.stringify(session));
+            }
             setActiveTab('chat');
         } catch (error) {
             console.error('Error creating session:', error);
         }
     };
 
-    const handleDocumentSelect = async (document: Document) => {
-        try {
-            const session = await createSession(document.id);
-            setCurrentSession(session);
+    const handleDocumentSelect = async (doc: Document) => {
+        // 0ms Instant Session Switching from local cache or optimistic fallback
+        let sessionSet = false;
+        if (typeof window !== 'undefined') {
+            const cachedSession = localStorage.getItem(`lumina_doc_session_${doc.id}`);
+            if (cachedSession) {
+                try {
+                    const parsedSession = JSON.parse(cachedSession);
+                    setCurrentSession(parsedSession);
+                    setActiveTab('chat');
+                    sessionSet = true;
+                } catch (e) {
+                    // Ignore cache error
+                }
+            }
+        }
+
+        if (!sessionSet) {
+            // Optimistic instant session fallback while network resolves
+            const nowIso = new Date().toISOString();
+            const optimisticSession: Session = {
+                id: doc.id * 1000 + Date.now() % 1000,
+                user_id: currentUser?.id || 1,
+                document_id: doc.id,
+                document_name: doc.filename,
+                competency_score: 0.5,
+                teaching_mode: 'balanced',
+                session_start: nowIso,
+                last_interaction: nowIso
+            };
+            setCurrentSession(optimisticSession);
             setActiveTab('chat');
+        }
+
+        // Revalidate backend session asynchronously without blocking UI
+        try {
+            const backendSession = await createSession(doc.id);
+            setCurrentSession(backendSession);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(`lumina_doc_session_${doc.id}`, JSON.stringify(backendSession));
+            }
         } catch (error) {
-            console.error('Error creating session:', error);
+            console.error('Asynchronous session sync:', error);
         }
     };
 

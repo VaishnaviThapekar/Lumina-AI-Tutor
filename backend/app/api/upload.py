@@ -177,8 +177,10 @@ async def list_documents(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """List all documents owned by the authenticated user"""
-    documents = db.query(Document).filter(Document.user_id == current_user.id).all()
+    """List all documents owned by the authenticated user sorted by uploaded_at descending"""
+    documents = db.query(Document).filter(
+        Document.user_id == current_user.id
+    ).order_by(Document.uploaded_at.desc()).all()
     
     return {
         "documents": [

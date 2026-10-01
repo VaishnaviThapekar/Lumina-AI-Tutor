@@ -15,7 +15,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 90000,
+  timeout: 120000, // 120 seconds timeout for cold starts
 });
 
 // Attach the JWT to every request if the user is logged in
@@ -29,17 +29,40 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// If the token is invalid/expired, clear the session and bounce to login
+// Interceptor for auto-retrying cold-start backend wakeups and 401 redirect
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error?.config;
+
+    // Handle 401 Unauthorized
     if (error?.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('lumina_token');
       localStorage.removeItem('lumina_user');
       if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
         window.location.href = '/login';
       }
+      return Promise.reject(error);
     }
+
+    // Auto-retry logic for cold start timeouts (ECONNABORTED) or gateway errors (502, 503, 504)
+    if (config && !config._retryCount) {
+      config._retryCount = 0;
+    }
+
+    const isNetworkOrTimeoutError =
+      error.code === 'ECONNABORTED' ||
+      !error.response ||
+      [502, 503, 504].includes(error.response?.status);
+
+    if (config && isNetworkOrTimeoutError && config._retryCount < 2) {
+      config._retryCount += 1;
+      console.warn(`[API] Server waking up from cold start... Retry attempt #${config._retryCount} for ${config.url}`);
+      // Wait 3 seconds before retrying
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      return api(config);
+    }
+
     return Promise.reject(error);
   }
 );

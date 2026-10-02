@@ -4,6 +4,7 @@ import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
 import ThemeProvider from '@/components/ThemeProvider';
 import OAuthUserSync from '@/components/OAuthUserSync';
+import BackendKeepAlive from '@/components/BackendKeepAlive';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <ThemeProvider>
+            <BackendKeepAlive />
             <OAuthUserSync />
             {children}
           </ThemeProvider>

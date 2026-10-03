@@ -55,7 +55,9 @@ api.interceptors.response.use(
       !error.response ||
       [502, 503, 504].includes(error.response?.status);
 
-    if (config && isNetworkOrTimeoutError && config._retryCount < 2) {
+    const shouldSkipRetry = config?.skipRetry || (config?.timeout && config.timeout <= 5000);
+
+    if (config && isNetworkOrTimeoutError && !shouldSkipRetry && config._retryCount < 2) {
       config._retryCount += 1;
       console.warn(`[API] Server waking up from cold start... Retry attempt #${config._retryCount} for ${config.url}`);
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -68,7 +70,7 @@ api.interceptors.response.use(
 
 // --- Local Fallback & Cache Utilities ---
 
-const FALLBACK_DOCUMENTS: Document[] = [
+export const FALLBACK_DOCUMENTS: Document[] = [
   {
     id: 101,
     filename: 'Introduction to Machine Learning.pdf',
@@ -89,7 +91,7 @@ const FALLBACK_DOCUMENTS: Document[] = [
   }
 ];
 
-function getCachedDocuments(): Document[] {
+export function getCachedDocuments(): Document[] {
   if (typeof window === 'undefined') return FALLBACK_DOCUMENTS;
   try {
     const raw = localStorage.getItem('lumina_cached_documents');
@@ -99,6 +101,8 @@ function getCachedDocuments(): Document[] {
         return parsed;
       }
     }
+    // Automatically seed local storage if empty
+    localStorage.setItem('lumina_cached_documents', JSON.stringify(FALLBACK_DOCUMENTS));
   } catch (err) {
     console.warn('[API Cache] Error parsing cached documents:', err);
   }
@@ -123,7 +127,7 @@ function saveSingleLocalDocument(doc: Document): void {
 // --- Proactive Background Keep-Alive Ping ---
 export const pingBackend = async (): Promise<boolean> => {
   try {
-    await api.get('/health', { timeout: 15000 });
+    await api.get('/health', { timeout: 10000, skipRetry: true } as any);
     return true;
   } catch (err) {
     console.warn('[API Keep-Alive] Backend is waking up or cold starting...');
@@ -176,13 +180,14 @@ export const uploadDocument = async (file: File): Promise<UploadResponse> => {
 
 export const listDocuments = async (): Promise<{ documents: Document[] }> => {
   try {
-    const response = await api.get('/api/upload/documents');
-    if (response.data && Array.isArray(response.data.documents)) {
+    // 2.5s fast timeout for document listing so UI instantly loads from cache if server is sleeping
+    const response = await api.get('/api/upload/documents', { timeout: 2500, skipRetry: true } as any);
+    if (response.data && Array.isArray(response.data.documents) && response.data.documents.length > 0) {
       saveCachedDocuments(response.data.documents);
       return response.data;
     }
   } catch (err) {
-    console.warn('[API Fallback] listDocuments failed/offline. Returning cached documents.', err);
+    console.warn('[API Fallback] listDocuments timed out or backend cold starting. Returning cached documents.', err);
   }
   return { documents: getCachedDocuments() };
 };

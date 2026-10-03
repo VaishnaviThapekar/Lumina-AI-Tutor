@@ -31,7 +31,7 @@ import YouTubeRecommendations from '@/components/YouTubeRecommendations';
 import MultiAgentDebate from '@/components/MultiAgentDebate';
 import VectorEmbeddingSpace from '@/components/VectorEmbeddingSpace';
 import { Headphones, PenTool, Layers, Zap, Youtube, Compass } from 'lucide-react';
-import { createSession, listDocuments, deleteDocument } from '@/lib/api';
+import { createSession, listDocuments, deleteDocument, getCachedDocuments, FALLBACK_DOCUMENTS } from '@/lib/api';
 import type { Session, Document, UploadResponse } from '@/lib/types';
 import { getCurrentUser, logout, syncOAuthSession } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
@@ -193,55 +193,31 @@ export default function Dashboard() {
         }
     }, [router, sessionStatus, session, initUserSession]);
 
-    const [documentsLoading, setDocumentsLoading] = useState(true);
+    const [documentsLoading, setDocumentsLoading] = useState(false);
     const [documentsError, setDocumentsError] = useState(false);
 
     // Initial load from local cache for 0ms instant rendering
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            try {
-                const cached = localStorage.getItem('lumina_cached_documents');
-                if (cached) {
-                    const parsed = JSON.parse(cached);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        setDocuments(parsed);
-                        setDocumentsLoading(false);
-                    }
-                }
-            } catch (e) {
-                console.warn('Failed to read cached documents:', e);
-            }
+            const initialDocs = getCachedDocuments();
+            setDocuments(initialDocs);
+            setDocumentsLoading(false);
         }
     }, []);
 
     const loadDocuments = useCallback(async () => {
-        // Only show spinner if we have 0 cached documents
-        if (typeof window !== 'undefined') {
-            const cached = localStorage.getItem('lumina_cached_documents');
-            if (!cached || JSON.parse(cached).length === 0) {
-                setDocumentsLoading(true);
-            }
-        }
         setDocumentsError(false);
         try {
             const response = await listDocuments();
-            setDocuments(response.documents);
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('lumina_cached_documents', JSON.stringify(response.documents));
+            if (response?.documents && response.documents.length > 0) {
+                setDocuments(response.documents);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('lumina_cached_documents', JSON.stringify(response.documents));
+                }
             }
         } catch (error) {
             console.error('Error loading documents:', error);
-            setDocumentsError(true);
-            setDocuments((prev) => {
-                if (prev.length === 0) {
-                    return [
-                        { id: 100, filename: 'Quantum Computing 101.pdf', uploaded_at: new Date().toISOString(), namespace: 'sample_0' },
-                        { id: 101, filename: 'Machine Learning Basics.pdf', uploaded_at: new Date().toISOString(), namespace: 'sample_1' },
-                        { id: 102, filename: 'Cellular Biology.pdf', uploaded_at: new Date().toISOString(), namespace: 'sample_2' }
-                    ];
-                }
-                return prev;
-            });
+            setDocuments((prev) => (prev.length > 0 ? prev : FALLBACK_DOCUMENTS));
         } finally {
             setDocumentsLoading(false);
         }

@@ -209,7 +209,7 @@ export const createSession = async (documentId: number): Promise<Session> => {
   try {
     const response = await api.post('/api/chat/session', {
       document_id: documentId,
-    });
+    }, { timeout: 3500, skipRetry: true } as any);
     return response.data;
   } catch (err) {
     console.warn('[API Fallback] createSession failed. Returning resilient session.', err);
@@ -227,7 +227,7 @@ export const createSession = async (documentId: number): Promise<Session> => {
 
 export const getSession = async (sessionId: number): Promise<Session> => {
   try {
-    const response = await api.get(`/api/chat/session/${sessionId}`);
+    const response = await api.get(`/api/chat/session/${sessionId}`, { timeout: 3500, skipRetry: true } as any);
     return response.data;
   } catch (err) {
     console.warn(`[API Fallback] getSession ${sessionId} failed. Returning fallback session.`, err);
@@ -260,10 +260,10 @@ export const sendMessage = async (
     const response = await api.post('/api/chat/message', {
       session_id: sessionId,
       message,
-    });
+    }, { timeout: 6000, skipRetry: true } as any);
     return response.data;
   } catch (err) {
-    console.warn('[API Fallback] sendMessage failed. Generating Socratic fallback response.', err);
+    console.warn('[API Fallback] sendMessage failed or timed out. Generating instant Socratic fallback response.', err);
     
     // Intelligently respond based on input message keywords
     const lower = message.toLowerCase();
@@ -295,7 +295,7 @@ export const sendMessage = async (
 
 export const getChatHistory = async (sessionId: number) => {
   try {
-    const response = await api.get(`/api/chat/session/${sessionId}/history`);
+    const response = await api.get(`/api/chat/session/${sessionId}/history`, { timeout: 3500, skipRetry: true } as any);
     return response.data;
   } catch (err) {
     console.warn(`[API Fallback] getChatHistory ${sessionId} failed. Returning empty history.`, err);
@@ -314,7 +314,8 @@ export const generateQuiz = async (
       document_id: documentId,
       num_questions: numQuestions,
       difficulty,
-    });
+    }, { timeout: 4500, skipRetry: true } as any);
+    return response.data;
     return response.data;
   } catch (err) {
     console.warn('[API Fallback] generateQuiz failed. Generating fallback interactive quiz.', err);
@@ -624,7 +625,7 @@ export interface ConceptMapData {
 
 export const getConceptMap = async (documentId: number): Promise<ConceptMapData> => {
   try {
-    const response = await api.get(`/api/concept-map/${documentId}`);
+    const response = await api.get(`/api/concept-map/${documentId}`, { timeout: 3500, skipRetry: true } as any);
     return response.data;
   } catch (err) {
     console.warn(`[API Fallback] getConceptMap ${documentId} failed. Returning local map.`, err);

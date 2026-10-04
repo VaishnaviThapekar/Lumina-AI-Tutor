@@ -92,8 +92,8 @@ const QuizModule: React.FC<QuizModuleProps> = ({
       setResult(quizResult);
       onCompetencyUpdate(quizResult.updated_competency_score);
 
-      // Fix: Backend returns normalized score (0.0 to 1.0). Displayed and awarded percentage is score * 100
-      const scorePct = Math.round(quizResult.score * 100);
+      // Safely parse percentage whether backend/fallback returns fractional (0.4) or percentage (40)
+      const scorePct = quizResult.score <= 1.0 ? Math.round(quizResult.score * 100) : Math.round(quizResult.score);
       addQuizResult(scorePct);
       awardXPForQuiz(scorePct);
       notifyLuminaDataUpdated();
@@ -152,7 +152,7 @@ const QuizModule: React.FC<QuizModuleProps> = ({
             <div className="flex items-center justify-center mt-8 py-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
               <Loader2 className="w-5 h-5 animate-spin text-purple-600 dark:text-purple-400" />
               <span className="ml-2 text-sm font-semibold text-purple-700 dark:text-purple-300">
-                Generating Questions from Vector Embeddings...
+                Evaluating quiz results...
               </span>
             </div>
           )}
@@ -170,7 +170,8 @@ const QuizModule: React.FC<QuizModuleProps> = ({
 
   // Results screen
   if (result) {
-    const percentage = Math.round(result.score * 100);
+    const percentage = result.score <= 1.0 ? Math.round(result.score * 100) : Math.round(result.score);
+    const masteryPct = result.updated_competency_score <= 1.0 ? Math.round(result.updated_competency_score * 100) : Math.round(result.updated_competency_score);
 
     return (
       <div className="space-y-6 max-h-[85vh] overflow-y-auto pr-1">
@@ -183,7 +184,7 @@ const QuizModule: React.FC<QuizModuleProps> = ({
             {result.correct_answers} out of {result.total_questions} questions answered correctly
           </p>
           <div className="inline-block mt-3 px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold">
-            Updated Mastery Score: {Math.round(result.updated_competency_score * 100)}%
+            Updated Mastery Score: {masteryPct}%
           </div>
         </div>
 

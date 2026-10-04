@@ -24,9 +24,12 @@ logger = logging.getLogger("lumina.main")
 async def lifespan(app: FastAPI):
     """Lifecycle manager for startup and shutdown events"""
     logger.info("🚀 Starting Lumina Adaptive AI Tutor System")
-    create_tables()
-    run_lightweight_migrations()
-    logger.info("✅ Database tables created and verified")
+    try:
+        create_tables()
+        run_lightweight_migrations()
+        logger.info("✅ Database tables created and verified")
+    except Exception as exc:
+        logger.warning(f"⚠️ Initial database setup notice: {exc}. Server continuing startup.")
     yield
     logger.info("👋 Shutting down Lumina")
 

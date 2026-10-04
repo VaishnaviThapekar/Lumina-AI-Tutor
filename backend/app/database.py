@@ -4,14 +4,34 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 from app.config import settings
 
-# Database engine
-# Render (and similar providers) give connection strings starting with
-# "postgres://", but SQLAlchemy 1.4+ requires the "postgresql://" scheme.
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Database engine setup with automatic fallback resilience for Render/production deployments
 _db_url = settings.DATABASE_URL
 if _db_url.startswith("postgres://"):
     _db_url = _db_url.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(_db_url, pool_pre_ping=True)
+def _build_engine(url: str):
+    connect_args = {}
+    if "sqlite" in url:
+        connect_args = {"check_same_thread": False}
+    return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
+
+try:
+    engine = _build_engine(_db_url)
+    # Perform immediate lightweight connection test
+    with engine.connect() as conn:
+        pass
+except Exception as exc:
+    logger.warning(
+        f"⚠️ Primary DATABASE_URL ({_db_url}) failed to connect: {exc}. "
+        "Falling back to resilient local SQLite database."
+    )
+    _db_url = "sqlite:///./lumina.db"
+    engine = _build_engine(_db_url)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

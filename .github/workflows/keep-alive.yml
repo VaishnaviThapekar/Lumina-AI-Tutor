@@ -1,0 +1,22 @@
+name: 24/7 Backend Keep-Alive Ping
+
+on:
+  schedule:
+    # Run every 12 minutes to keep the Render free-tier container permanently awake
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Lumina Render Backend Health Endpoint
+        run: |
+          echo "Pinging Lumina AI Tutor backend..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://lumina-ai-tutor-9tir.onrender.com/health)
+          echo "Received HTTP status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 301 ] || [ "$HTTP_STATUS" -eq 302 ]; then
+            echo "✅ Lumina backend is healthy and active!"
+          else
+            echo "⚠️ Backend returned status $HTTP_STATUS - server container is waking up or active."
+          fi

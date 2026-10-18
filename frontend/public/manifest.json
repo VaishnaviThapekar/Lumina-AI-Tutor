@@ -1,0 +1,17 @@
+{
+  "name": "Lumina AI Tutor",
+  "short_name": "Lumina",
+  "description": "Adaptive AI-powered personal tutor that evolves with your understanding.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -31,7 +31,8 @@ import YouTubeRecommendations from '@/components/YouTubeRecommendations';
 import MultiAgentDebate from '@/components/MultiAgentDebate';
 import VectorEmbeddingSpace from '@/components/VectorEmbeddingSpace';
 import ExamCheatSheet from '@/components/ExamCheatSheet';
-import { Headphones, PenTool, Layers, Zap, Youtube, Compass, Flame } from 'lucide-react';
+import OralExamSimulator from '@/components/OralExamSimulator';
+import { Headphones, PenTool, Layers, Zap, Youtube, Compass, Flame, GraduationCap } from 'lucide-react';
 import { createSession, listDocuments, deleteDocument, getCachedDocuments, FALLBACK_DOCUMENTS } from '@/lib/api';
 import type { Session, Document, UploadResponse } from '@/lib/types';
 import { getCurrentUser, logout, syncOAuthSession } from '@/lib/auth';
@@ -41,7 +42,7 @@ export default function Dashboard() {
     const router = useRouter();
     const [currentSession, setCurrentSession] = useState<Session | null>(null);
     const [documents, setDocuments] = useState<Document[]>([]);
-    const [activeTab, setActiveTab] = useState<'chat' | 'quiz' | 'upload' | 'stats' | 'timer' | 'notes' | 'analytics' | 'social' | 'flashcards' | 'gamification' | 'planner' | 'concept-map' | 'podcast' | 'multidoc' | 'evaluator' | 'sprint' | 'videos' | 'agent-debate' | 'vector-space' | 'cheat-sheet'>('upload');
+    const [activeTab, setActiveTab] = useState<'chat' | 'quiz' | 'upload' | 'stats' | 'timer' | 'notes' | 'analytics' | 'social' | 'flashcards' | 'gamification' | 'planner' | 'concept-map' | 'podcast' | 'multidoc' | 'evaluator' | 'sprint' | 'videos' | 'agent-debate' | 'vector-space' | 'cheat-sheet' | 'oral-exam'>('upload');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [previousScore, setPreviousScore] = useState<number | undefined>();
     const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -831,6 +832,19 @@ export default function Dashboard() {
                                         </div>
                                         <span className="text-sm">Exam Cram</span>
                                     </button>
+
+                                    <button
+                                        onClick={() => setActiveTab('oral-exam')}
+                                        className={`flex items-center justify-center gap-2 py-4 px-4 font-medium transition-colors whitespace-nowrap ${activeTab === 'oral-exam'
+                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        <div className="w-5 h-5 bg-gradient-to-br from-amber-600 to-rose-600 rounded-lg flex items-center justify-center">
+                                            <GraduationCap className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-sm">Oral Defense</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -842,7 +856,7 @@ export default function Dashboard() {
                                 <div className={activeTab === 'chat' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <div className="space-y-6">
                                         {currentSession ? (
-                                            <ChatInterface sessionId={currentSession.id} />
+                                            <ChatInterface sessionId={currentSession.id} documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename} documentId={currentSession?.document_id} />
                                         ) : (
                                             <div className="text-center py-12">
                                                 <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -966,6 +980,13 @@ export default function Dashboard() {
 
                                 <div className={activeTab === 'cheat-sheet' ? 'block animate-fade-in-slide-up' : 'hidden'}>
                                     <ExamCheatSheet
+                                        documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
+                                        documentId={currentSession?.document_id}
+                                    />
+                                </div>
+
+                                <div className={activeTab === 'oral-exam' ? 'block animate-fade-in-slide-up' : 'hidden'}>
+                                    <OralExamSimulator
                                         documentTitle={documents.find(d => d.id === currentSession?.document_id)?.filename}
                                         documentId={currentSession?.document_id}
                                     />

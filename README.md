@@ -50,6 +50,25 @@ An intelligent, adaptive tutoring platform that personalizes education through R
 - **Hardware-Accelerated Transitions**: Smooth cubic-bezier slide-up and fade-in animations (`animate-fade-in-slide-up`) on all section tab switches.
 - **Custom Brand Identity**: Custom vector blue/purple open-book SVG favicon and adaptive Dark/Light mode theme engine.
 
+### 📖 10. Split-Screen Interactive Document Reader
+- **Side-by-Side Socratic Learning**: Toggle split-screen in Chat to view your uploaded document alongside your conversation.
+- **In-Document Search & Action Pills**: Live search across sections with 1-click `✨ Explain Section`, `💡 ELI5`, and `🎯 Quiz` triggers that scaffold learning directly into the Socratic dialogue.
+
+### 🎓 11. Socratic Viva Voce & AI Mock Oral Exam Board
+- **Oral Defense Simulator**: Choose from 3 examination board personas (*Prof. Alistair Vance*, *Elena Rostova*, *Dr. Marcus Socratic*) to simulate real thesis defense and technical interview conditions.
+- **Voice Synthesis & Microphone Dictation**: Examiner speaks viva questions aloud, and candidates can defend their thesis by voice or text.
+- **Rubric Grading & Follow-Up Grilling**: Generates formal grades across Conceptual Accuracy, Terminology, Depth, and Structure with dynamic follow-up challenge questions and downloadable scorecards.
+
+### 📑 12. Exam Cram & High-Yield Cheat Sheet Generator
+- **Rapid-Fire Revision**: Generates 5-minute executive summaries, formula matrices, exam pitfalls, and practice drill cards.
+- **1-Click Export**: Print or export clean formatted PDF cheat sheets and Markdown summaries.
+
+### 📱 13. Progressive Web App (PWA) Installability
+- **Install on Any Device**: Native web app manifest configured with custom branding, offline assets, and standalone display mode for desktop and mobile installations.
+
+### ⏱️ 14. 24/7 Render Zero Cold-Start Automation
+- **Continuous Availability**: Automated GitHub Actions cron pinging `/health` every 12 minutes to permanently keep the Render backend warm.
+
 ---
 
 ## 🚀 Quick Start Guide
@@ -161,7 +180,7 @@ Lumina-AI-Tutor/
 │   └── .env.example
 ├── frontend/
 │   ├── app/              # Next.js 14 App Router (pages, layout, favicons)
-│   ├── components/       # 25+ Glassmorphic React Components (Podcast, MultiDoc, Sprint, Quiz, Chat)
+│   ├── components/       # 30+ Glassmorphic React Components (Podcast, MultiDoc, Sprint, Quiz, Chat, OralExam, CheatSheet)
 │   ├── lib/              # Event Bus, Study Tracker, Auth, and XP Trigger Utilities
 │   ├── public/           # Static Brand SVG Favicons & Assets
 │   ├── package.json
